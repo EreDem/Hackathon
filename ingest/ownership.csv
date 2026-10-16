@@ -1,0 +1,22 @@
+dataset,component,team
+BGL,KERNEL,HPC Kernel
+BGL,APP,HPC Application Support
+BGL,MMCS,HPC Control System
+BGL,BGLMASTER,HPC Control System
+BGL,CMCS,HPC Control System
+BGL,DISCOVERY,HPC Hardware & Interconnect
+BGL,HARDWARE,HPC Hardware & Interconnect
+BGL,LINKCARD,HPC Hardware & Interconnect
+BGL,SERV_NET,HPC Hardware & Interconnect
+BGL,MONITOR,HPC Operations
+OpenStack,nova.osapi_compute.wsgi.server,Cloud API
+OpenStack,nova.metadata.wsgi.server,Cloud API
+OpenStack,nova.api.openstack.wsgi,Cloud API
+OpenStack,nova.api.openstack.compute.server_external_events,Cloud API
+OpenStack,nova.compute.manager,Cloud Compute
+OpenStack,nova.compute.claims,Cloud Compute
+OpenStack,nova.compute.resource_tracker,Cloud Compute
+OpenStack,nova.virt.libvirt.driver,Cloud Virtualization
+OpenStack,nova.virt.libvirt.imagecache,Cloud Virtualization
+OpenStack,nova.scheduler.host_manager,Cloud Scheduling
+OpenStack,nova.scheduler.client.report,Cloud Scheduling

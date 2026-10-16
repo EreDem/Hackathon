@@ -1,0 +1,118 @@
+# CLAUDE.md – Projektkontext „Making Sense of Logs“
+
+## Wer und was
+
+- Ich bin **Eren**, Informatik-Student (RWTH Aachen, Fokus ML/KI). Antworte auf **Deutsch**, erkläre verständlich,
+  ich arbeite unter **Windows mit PowerShell** und VS Code.
+- Projekt: **schubKI National AI Hackathon 2026, Challenge 04 von SereneDB: „Making Sense of Logs“**.
+  48-h-Sprint am **17.–18. Oktober 2026**, online, Team aus **5 Personen**.
+- Aufgabe der Challenge: Prototyp, der Log-Daten in nützliche Antworten für drei Rollen verwandelt.
+  SereneDB findet Belege und berechnet Kennzahlen, ein KI-Agent erklärt und empfiehlt.
+  Bewertet wird der Ablauf **Frage → Belege → Empfehlung**.
+- **Leitprinzip: SQL rechnet, das LLM erklärt.** Das LLM erfindet keine Zahlen, jede Aussage ist auf eine Query
+  oder konkrete Log-Zeilen rückführbar.
+
+## Die drei Rollen (gleiche Daten, andere Flughöhe)
+
+| Rolle | Frage | Ebene |
+|---|---|---|
+| Engineer | „Warum ist dieser Fehler passiert?“ | einzelnes Ereignis + Kontext (gleicher Request/VM bzw. Knoten davor) |
+| Team Lead | „Was kommt in meinem Team immer wieder?“ | Muster (Templates) je Team, Trend |
+| Manager | „Welches Team / Problem zuerst?“ | Muster × Auswirkung, Rangliste mit Score |
+
+## Vorgaben aus der offiziellen SereneDB-Guidance
+
+- Daten: **BGL + OpenStack** Rohdaten von Zenodo (Links im Brief), ca. **770 MB**.
+- Selbst bauen: **Schema**, **Laden** (bevorzugt per SQL: `read_csv`, `read_json`, `read_ndjson`, `read_parquet`, `COPY`;
+  ein Skript zur Vorbereitung ist ok), **Ownership-Tabelle** (fiktiv: dataset, component, team; im README dokumentieren).
+- Alle SQL-Dateien und Skripte gehören ins Repo.
+- KI-Nutzung ist **ausdrücklich erwünscht**. Docs-MCP verbinden:
+  `claude mcp add --transport http serenedb-docs https://api.serenedb.com/mcp`
+  (Tools: search_docs, read_section, docs_health). Die Doku ist auch in SQL durchsuchbar: `SELECT * FROM sdb_docs.search('…')`.
+  **Bei SereneDB-Syntaxfragen immer zuerst den Docs-MCP nutzen**, nicht Postgres-Wissen annehmen.
+
+## Die Daten
+
+| | BGL | OpenStack |
+|---|---|---|
+| Was | Blue Gene/L Supercomputer, Hardware/Kernel | Nova (Cloud), API-Requests, VM-Lebenszyklus |
+| Umfang | ca. 4,7 Mio. Zeilen | ca. 200.000 Zeilen (normal1, normal2, abnormal) |
+| Format | `Label Unix-Zeit Datum Knoten Zeit Knoten Typ Komponente Level Nachricht` | `Datei Datum Zeit PID Level Komponente [req-… user project - - -] Nachricht` |
+| Besonderheit | Label ≠ `-` = echte Störung (Alert-Kategorie, z. B. KERNDTLB) | `[instance: UUID]` in der Nachricht, Abnormal-Datei mit eingespielten VM-Fehlern |
+| Kontext für Engineer | Knoten + Zeitfenster | `request_id`, `instance_id` |
+
+## Architektur
+
+```
+Rohdaten (data/) → ingest/prepare.py (Parsing je Format + Drain3 → out/*.parquet)
+→ ingest/load.sql (read_parquet → Tabellen logs, templates, ownership + Volltextindex)
+→ tools/ (feste SQL-Queries als Python-Funktionen, geben Daten + ausgeführte SQL zurück)
+→ agent/ (EIN LLM-Agent mit nativem Tool-Calling, System-Prompt je Rolle)
+→ app.py (Streamlit: Rolle/Team wählen, Chat, Belege-Panel, Diagramme)
+```
+
+## Schema
+
+- `logs(id, dataset, ts, level, level_raw, component, service, node, pid, request_id, instance_id, alert, message, template_id, source_file, parsed)`
+- `templates(template_id, dataset, template, count, first_seen, last_seen, max_level, alerts, main_component, example_log_id)`
+- `ownership(dataset, component, team)`
+- `level` normalisiert auf DEBUG/INFO/WARN/ERROR/FATAL (BGL: SEVERE→ERROR, FAILURE→FATAL), Original in `level_raw`.
+- `template_id` mit Präfix `BGL-0012` / `OS-0007`. `service`: BGL = Ereignistyp (RAS), OpenStack = nova-api/nova-compute/nova-scheduler.
+
+## Tools (Person 2 und 3)
+
+| Tool | Rolle | Liefert |
+|---|---|---|
+| `search_logs(query, dataset, level, team, von, bis)` | Engineer | Volltexttreffer |
+| `get_context(log_id, fenster_sek)` | Engineer | OpenStack: gleicher Request/VM · BGL: gleicher Knoten im Zeitfenster |
+| `top_patterns(team, dataset, von, bis, limit)` | Team Lead | häufigste Templates (ERROR/FATAL), mit Alerts |
+| `pattern_trend(template_id or team, intervall)` | Lead/Manager | Zeitreihe |
+| `priority_ranking(von, bis, group_by)` | Manager | Rangliste je Problem oder Team |
+
+Prioritäts-Score (transparent, Faktoren in UI zeigen):
+`Häufigkeit_norm × Schweregrad (FATAL 3, ERROR 2, WARN 1) × Reichweite_norm (Knoten bzw. VMs/Requests) × Trendfaktor (1 ± 0.5) × Alertfaktor (1 + Alert-Anteil, nur BGL)`.
+
+## SereneDB – was wir wissen
+
+- Docker: `docker compose up -d` (Image `serenedb/serenedb`, Port **7890**, keine Zugangsdaten nötig).
+  Repo-Ordner ist im Container unter **`/data`** gemountet. Pfade in `read_parquet`/`read_csv` sind **Container-Pfade**.
+- Verbindung: `psycopg.connect("host=localhost port=7890 dbname=postgres user=postgres")`.
+- Keine verschachtelten Transaktionen, keine Named Cursors (`DECLARE CURSOR`). Für große Ergebnisse `cur.stream(...)`.
+- Volltext (Syntax aus Quick Start, **noch nicht getestet**):
+  ```sql
+  CREATE TEXT SEARCH DICTIONARY english AS split_text(case := 'lower') WITH (frequency, position, offset);
+  CREATE INDEX logs_idx ON logs USING inverted(id, message english);
+  VACUUM (REFRESH_TABLE) logs;   -- nach dem Laden nötig
+  SELECT id, message FROM logs_idx WHERE message @@ ts_phrase('connection refused');
+  ```
+
+## Meine Rolle: Person 1 – Daten & Laden
+
+- Samstag: `prepare.py` auf echten Daten laufen lassen, `load.sql` zum Laufen bringen, Ownership-Tabelle fertig, Qualitätsbericht ans Team.
+- Sonntag: Tools von Person 2/3 gegen bekannte Fälle testen, README-Abschnitt Daten/Ownership, Backup-Video.
+- Andere: 2 Suche (Engineer-Tools, Index), 3 Analytics (Lead/Manager-Tools, Score), 4 Agent, 5 UI/Demo/Pitch.
+
+## Stand (Sa., 17.10., 01:20)
+
+- `ingest/prepare.py`: **getestet** mit Loghub-Samples (je 2.000 Zeilen). BGL 105 Templates, 97 % korrekt gruppiert (Drain-Schwelle 0.4).
+  OpenStack braucht Schwelle **0.9** (sonst verschmelzen „VM Paused/Resumed“, GET/POST), 44 Templates (Referenz 43).
+  Ca. 25.000 Zeilen/s, Streaming, schreibt Parquet in 100k-Blöcken.
+- `ingest/load.sql`, `ingest/run_sql.py`: geschrieben, **gegen SereneDB noch nicht getestet**.
+- `ingest/ownership.csv`: Entwurf. `prepare.py` schreibt `out/components.csv` mit allen echten Komponenten → abgleichen.
+- Bekannt: `drain3` baut unter **Python 3.13** nicht mit neuem setuptools. Lösung: `pip install "setuptools==69.*" wheel`
+  und dann `pip install --no-build-isolation drain3`, oder Python 3.11/3.12.
+
+## Nächste Schritte für mich
+
+1. `docker compose up -d`, Docs-MCP verbinden.
+2. Zenodo-Daten nach `data/` entpacken, Dateinamen prüfen.
+3. `python ingest/prepare.py data/BGL.log --limit 200000` (Testlauf), Bericht prüfen.
+4. Volllauf: `python ingest/prepare.py data/BGL.log "data/openstack_*.log"`.
+5. `python ingest/run_sql.py ingest/load.sql`, Fehler mit Docs-MCP beheben.
+6. `out/components.csv` mit `ownership.csv` abgleichen, Team informieren.
+
+## Konventionen
+
+- Python 3.11/3.12, Kommentare und Ausgaben auf Deutsch.
+- Keine Daten (`data/`, `out/`) und keine `.env` committen.
+- Commit-Messages kurz, Englisch oder Deutsch.

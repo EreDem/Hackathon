@@ -1,0 +1,14 @@
+services:
+  serenedb:
+    image: serenedb/serenedb
+    container_name: serenedb
+    ports:
+      - "7890:7890"
+    volumes:
+      - ./:/data          # Repo-Ordner ist im Container unter /data sichtbar (für read_parquet/read_csv)
+    restart: unless-stopped
+  # app:                  # kommt am Sonntag dazu (Streamlit)
+  #   build: .
+  #   ports: ["8501:8501"]
+  #   env_file: .env
+  #   depends_on: [serenedb]

@@ -1,0 +1,20 @@
+# Daten (zu groß für GitHub) – jeder lädt sie selbst von Zenodo
+data/*
+!data/.gitkeep
+out/*
+!out/.gitkeep
+
+# Geheimnisse
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,12 @@
+# Ingest
+pyarrow>=15
+drain3==0.9.11        # Python 3.13: vorher  pip install "setuptools==69.*" wheel  und dann  pip install --no-build-isolation drain3
+# DB
+psycopg[binary]>=3.2
+# Tools / Agent / UI
+pydantic>=2
+python-dotenv>=1
+anthropic>=0.40       # oder openai – je nachdem, welchen API-Key ihr habt
+streamlit>=1.38
+plotly>=5
+pandas>=2
