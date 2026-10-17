@@ -1,0 +1,157 @@
+{
+  "started_utc": "2026-10-17T16:02:30.733448+00:00",
+  "steps": [
+    {
+      "name": "Fresh Python 3.12 virtual environment",
+      "passed": true,
+      "seconds": 19.98
+    },
+    {
+      "name": "Upgrade pip",
+      "passed": true,
+      "seconds": 17.18
+    },
+    {
+      "name": "Install all declared requirements",
+      "passed": true,
+      "seconds": 275.92
+    },
+    {
+      "name": "Check dependency consistency",
+      "passed": true,
+      "seconds": 3.75
+    },
+    {
+      "name": "Prepare full BGL and OpenStack corpus from raw logs",
+      "passed": true,
+      "seconds": 455.52
+    },
+    {
+      "name": "Start isolated disposable SereneDB",
+      "passed": true,
+      "seconds": 1.27
+    },
+    {
+      "name": "Load full corpus and full-text index",
+      "passed": true,
+      "seconds": 12.19
+    },
+    {
+      "name": "Reload full corpus into recreated disposable database",
+      "passed": true,
+      "seconds": 12.34
+    },
+    {
+      "name": "Create read-only app login with individual table grants",
+      "passed": true,
+      "seconds": 0.83
+    },
+    {
+      "name": "Final regression suite with real SQL fixtures",
+      "passed": true,
+      "seconds": 34.48
+    },
+    {
+      "name": "Full-corpus analytics acceptance",
+      "passed": true,
+      "seconds": 6.07
+    },
+    {
+      "name": "Three-role real-data Streamlit acceptance without model key",
+      "passed": true,
+      "seconds": 19.06
+    },
+    {
+      "name": "Verify missing model key, exact corpus counts and read-only privileges",
+      "passed": true,
+      "seconds": 3.51
+    }
+  ],
+  "base_commit": "c3ec867541cf69a16c00dd1758b7e7c0af515ce1",
+  "candidate_changes_overlaid": true,
+  "model_calls": 0,
+  "isolation": "Fresh Git clone and venv; temporary database container on 127.0.0.1:7891; original instance untouched.",
+  "source_sha256": {
+    "docs/evidence/worked-investigation.json": "23c00296a8bed456fb4be5fb5b60ce1c27eba1ab5d42276d1932978610094792",
+    "docs/worked-investigation.md": "e243a4be5fa063bd41394ef8bafd2592cde368f086bf4da2c3b5137d3dc4239b",
+    "ingest/configure_local.py": "6e5ba597e204bb5db496db2263a902769b1e4c7d1ddc5970d6c5546f7f874b6c",
+    "tests/test_setup.py": "8ed0685913d1e11228a8fc09c8aa5800bf7ec444d83e2702b3a65d2ac3782c15",
+    "tests/test_submission.py": "71edf6c268ee39248d38109deeb5e883006fc3c98527815c2b4aca22445c3197",
+    ".env.example": "db75306d45314dfd839e8f323d7f950b95c55ef764153c26e076b42ff77bee72",
+    ".gitignore": "b8a775164254e75fb59af7551bfcfc2e7d427ab73ecdef0681d56a84398f0444",
+    ".streamlit/config.toml": "b8525d04cb5837aabcecb9bbc377c261a7ff128ee364d589deed419e1a2e07e7",
+    "AGENTS.md": "210f0f39f427ee17a49732c938e04d479ef2849fcfb30fc38482a7c4fd2a96a5",
+    "ANALYTICS.md": "ec95ebec21d0879eb703cb6971c1cdfa9130a6de42eab3305f5ffedbade1d921",
+    "CLAUDE.md": "6c890ae9267533d3cd3e609b7cab2c17c61f37c89d6db3511791f6ad4d826a6d",
+    "README.md": "7e225e8464edc1b734fa9046644ca8fb401320955aa6e1b8c916a351848ad29d",
+    "agent/README.md": "2c2458ef8b8c29535cf44adb641f7489da4da7879d437b74184e2dae83f7fb2b",
+    "agent/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "agent/__main__.py": "03e8448f8b839eb76c30b2a88887b850857df276a6645565453e54b7ecc045b7",
+    "agent/agent.py": "c23cf9e86835507a77689823f522cb0756567381146e47818eec46fd3996df81",
+    "agent/budget.py": "4d941e2239898c106bc6fe9245c665fc46b6befae8f01e9a0fac3fca86338165",
+    "agent/prompts.py": "a79cbe187f3d6c0e02f92067c8efc298c8f302198fee20f6f79592b17cc0d85f",
+    "agent/smoke.py": "aff562e401b441916361716763eafa24202fe552460fa13f442b340a99b52635",
+    "agent/toolkit.py": "23f19f0753e7e29ad0d61e014cd8f6f26e474fac453076d73d9491b411702862",
+    "app.py": "286c5b4131d0b397f0bdb04731838acd8bb5b9bc3be910f0972ff1c1bcc69412",
+    "data/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "docker-compose.yml": "b37ea487f0355539c6afe818bc38e023071818d9557fb78e7333136e4ed85e02",
+    "ingest/load.sql": "f095359b87a52ae66ae264365875614c8f36e6235debb78bc704fe3a34049eb7",
+    "ingest/ownership.csv": "b207e488ca09eeaec51a2821258c4d68cf6873079bb12aab489f4a45ab338081",
+    "ingest/prepare.py": "1b494d1cd099a32ef5dcb497a8aa2cf503edd9e8e683da1569b5e496c1040e08",
+    "ingest/run_sql.py": "4de0a71ba5dbb47dfa7075f23c39543da9b3e95fb693114ab9a2bdb492c86618",
+    "out/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "requirements-agent.txt": "0f96a20d6d65c66b0527c7e18612098b8d90f31c5dc718ce02db01265f2ee007",
+    "requirements.txt": "12c9b155785e3a7e02a1742a9068a3b9938b783ee50158eca337c6a95389da0d",
+    "tests/__init__.py": "74519fbe52a5ee653e0fa0b1b7f070cae6db6b1062227ed188369fe31ab3cf88",
+    "tests/analytics_support.py": "ed9fe22beef3f4d6a56951e5049b39217f2e164825d374a54292431cc19b0342",
+    "tests/check_agent_real.py": "89ee715f13610873be2f0d48fa45c0a9fa58cc764c493d690493eaf65a89404e",
+    "tests/check_analytics_real.py": "281276591b3e119a067df63dd00f1a4b564262ed000366680b9f4b6c901a7317",
+    "tests/check_ui_real.py": "83630c214bd6abe6ada4f15dbf0c84201b89984eb8cd606f0fed9c361f68b2a3",
+    "tests/test_agent.py": "8c41bc4b65ca7dd2626d3b5f7f4ff607407c11d7a70dd2ad77c14e9d04cc80ac",
+    "tests/test_analytics.py": "b53b444ec3d269c6c1b71d5c141252b96e2b72318716f61327845d0bc4c40874",
+    "tests/test_engineer.py": "cb9da5e9720506c71d51e9b7a5351a993c218c5ae37b3dea15797496e77ebbdd",
+    "tests/test_integration.py": "8292a3aa4ca39ce94e385eacecfab418fbf5b3beb28774e6efb7bea0a01aa816",
+    "tests/test_ui.py": "042cbbd31bc567354432c0daac9865ac512d2abe388ff88e2bab0d0770d6be1f",
+    "tests/test_visuals.py": "4394e32eba77142f47f7a489e89cb020687b3c43592124d8f19331d6465858fb",
+    "tests/ui_fixtures.py": "1cd14655dff7fd9976250815cba6a810f8019fd424a0bf6f38a5d5d9ce250425",
+    "tools/__init__.py": "2f91fa5f19ef545289e61fcf951aa185936c9cd8cb8cff52f4b6b33cee225a3e",
+    "tools/analytics.py": "a0c013c11170a3bd8b871efbfcf582e6fea43d3189d18fa701f160dd947279c4",
+    "tools/db.py": "9d7d13637019e9726757e12060bf75c0aae7b37a2dc45487af92a1a81a7990b5",
+    "tools/engineer.py": "fe7d7a3d9a0e6fdf28f19360093e366d96cecbd5b74a72e22ddd371ad66a2d7f",
+    "tools/visuals.py": "07f30fc1a050cfa9acb379d0340d69acfae2747d3d93585df62c2e2abcf1c578",
+    "ui.py": "83c435cd26fc1e7fac6acd716b055342c39a71b68c139238ddae42f33cefd4d1"
+  },
+  "archive_sha256": {
+    "BGL.zip": "d67fd82a711aea0157a9b83175892c6ee60e384a2ddf5bc51f39118453816da8",
+    "OpenStack.tar.gz": "87c98c5ed03262e05cdb7a6f3717033df76d88fda0f7d2db23bd9fa4200f1879"
+  },
+  "data_source": "Cached original official Zenodo archives; extracted afresh. No existing Parquet or database files reused.",
+  "image_id": "sha256:6d41ac6577e797289158786a2015ba8fbd6875feadb5c491518e166c011058c9",
+  "passed": true,
+  "temporary_container_removed": true,
+  "finished_utc": "2026-10-17T16:20:20.586726+00:00",
+  "initial_setup_failure": {
+    "stage": {
+      "name": "Create password-protected read-only app login",
+      "passed": false,
+      "seconds": 0.79
+    },
+    "cause": "SereneDB rejects a multi-table GRANT statement at the comma.",
+    "resolution": "Use a separate GRANT SELECT for each table; rerun setup on a recreated disposable database."
+  },
+  "python_version": "Python 3.12.14",
+  "streamlit_start_command_passed": true,
+  "regression_tests_passed": 87,
+  "analytics_checks_passed": 13,
+  "ui_roles_passed": [
+    "Engineer",
+    "Team Lead",
+    "Manager"
+  ],
+  "corpus_rows": 4955783,
+  "server": [
+    {
+      "version": "PostgreSQL 18.3 (SereneDB 26.10.1)"
+    }
+  ]
+}

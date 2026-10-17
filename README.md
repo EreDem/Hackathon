@@ -4,6 +4,143 @@ Prototyp, der Log-Daten (BGL + OpenStack) in Antworten für drei Rollen verwande
 **Engineer** (Ursache eines Fehlers), **Team Lead** (wiederkehrende Probleme im Team), **Manager** (Priorisierung).
 Ablauf: **Frage → Belege (SereneDB) → Empfehlung (KI-Agent)**. Leitprinzip: SQL rechnet, das LLM erklärt.
 
+## Jury quick-start (Windows / PowerShell)
+
+This submission is a Streamlit web application with an integrated tool-calling
+agent. It is **not an MCP server**; the brief accepts a web UI demonstrating agent
+tool calls. MCP and its separate award are optional.
+
+Start with the [worked investigation](docs/worked-investigation.md), its
+[executed SQL and actual agent answers](docs/evidence/worked-investigation.json),
+and the [clean-checkout rehearsal](docs/clean-checkout-rehearsal.md).
+
+### 1. Install from a clean checkout
+
+Prerequisites: Git, Python **3.12**, Docker Desktop with Linux containers, internet
+for package/data downloads, and enough disk space for raw logs, Parquet files and
+database storage. No model key is needed to install or explore the charts.
+
+```powershell
+git clone https://github.com/EreDem/Hackathon.git
+cd Hackathon
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip check
+```
+
+### 2. Download and prepare both public datasets
+
+```powershell
+New-Item -ItemType Directory -Force data/BGL, data/OpenStack | Out-Null
+curl.exe -L --fail -o data/BGL.zip "https://zenodo.org/records/8196385/files/BGL.zip?download=1"
+curl.exe -L --fail -o data/OpenStack.tar.gz "https://zenodo.org/records/8196385/files/OpenStack.tar.gz?download=1"
+.\.venv\Scripts\python.exe -c "import zipfile; zipfile.ZipFile('data/BGL.zip').extractall('data/BGL')"
+.\.venv\Scripts\python.exe -c "import tarfile; tarfile.open('data/OpenStack.tar.gz').extractall('data/OpenStack', filter='data')"
+.\.venv\Scripts\python.exe ingest/prepare.py data/BGL/BGL.log "data/OpenStack/openstack_*.log"
+```
+
+The full run must load **4,747,963 BGL** and **207,820 OpenStack** lines. A
+`--limit` sample is useful for development but does not reproduce the submission.
+
+### 3. Load a fresh local SereneDB and configure the app
+
+The following loader **recreates the challenge tables**. Run it on a fresh local
+instance, not an existing database whose data you need to preserve. Keep the
+repository in place: Docker mounts this directory at `/data`.
+
+```powershell
+docker compose up -d
+docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -c "SELECT version();"
+# If the database is still starting, retry SELECT version() before loading.
+docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -v ON_ERROR_STOP=1 -f /data/ingest/load.sql
+.\.venv\Scripts\python.exe ingest/configure_local.py
+```
+
+The setup script creates a password-protected `log_observatory` login with schema
+usage and SELECT on `logs`, `templates` and `ownership`. Its generated connection
+string is saved only in ignored `.env`; the password is never printed. Existing
+configured credentials are preserved. On later starts, keep `.env` and simply run
+`docker compose up -d`. A table reload requires restoring its SELECT grants (see
+below). No broad trust-authentication rule is needed.
+
+**Using an organiser-provided instance instead:** follow its supplied loader and
+server-side file-path instructions, copy `.env.example` to `.env` once, and set
+`DB_DSN` to the supplied PostgreSQL-compatible connection string. Skip the local
+Docker/login steps. Do not point the table-replacing loader at unrelated data.
+
+### 4. Start and try the three roles
+
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
+```
+
+Open **http://127.0.0.1:8501** on the same machine. Select a role/dataset/team,
+click **Apply scope**, then **Run prepared investigation**. Inspect **Query
+evidence** and download the investigation JSON. If the port is occupied, add
+`--server.port 8502` and open that port instead.
+
+To demonstrate the AI workflow, set your own `OPENAI_API_KEY` in `.env`, retain
+the configured `OPENAI_MODEL`, and restart Streamlit. Never commit or share that
+file. Model requests incur usage and use a local $5 ledger; preserve
+`.agent-usage.sqlite3`. Without a key, direct exploration works and chat is
+disabled. This repository does not include a shared jury key or a hosted service.
+
+Use these questions in the assistant after selecting the indicated scope:
+
+| Role / scope | Question to try |
+|---|---|
+| Engineer / OpenStack / All teams | Why is VM `544fd51c-4edc-4780-baae-ba1d80a0acfc` unusual? Compare its spawn duration with the baseline, inspect context and recommend the next check. |
+| Team Lead / BGL / HPC Kernel | Which problems recur across the historical period? Compare their frequency and observed node reach, inspect a trend and recommend what we should investigate first. |
+| Manager / BGL / All teams | Compare `data TLB error interrupt` with `data storage interrupt`. Use full-text search and aggregation to explain which deserves attention first and what remains unknown. |
+
+### 5. Verify independently
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -v
+$env:ANALYTICS_TEST_DB = '1'
+.\.venv\Scripts\python.exe -m unittest discover -v
+.\.venv\Scripts\python.exe -m tests.check_analytics_real
+.\.venv\Scripts\python.exe -m tests.check_ui_real
+```
+
+These checks do not call the model. `python -m tests.check_ui_real --live`
+explicitly runs three paid agent questions. SQL test fixtures are read-only CTEs;
+the production UI never imports synthetic fixtures.
+
+### Known limitations for judging
+
+- Local single-user prototype: no authentication, hosted jury URL or MCP endpoint.
+- Historical batch corpus: no upload workflow or automatic ingestion of new logs.
+  After an intentional table reload, restore SELECT grants and reconnect in the UI.
+- Coverage measures recorded logs, not uptime. Reach measures observed identifiers,
+  not customers. Event approximations and priority scores are heuristics.
+- BGL timezone labels were retained from ingestion and may not represent corrected UTC.
+- The agent has bounded calls, context and budget. Failures and shortened evidence
+  remain visible; a model answer alone does not validate a numerical claim.
+- Dependencies use version ranges; the rehearsal records the versions actually
+  installed. New package/image releases may require another rehearsal.
+
+### Agent tool contract
+
+All tools return executed `sql`, `zeilen` (returned row count), `daten` (rows)
+and scope/completeness metadata. Supporting SQL remains in `belege` or
+`meta.bereich`; a failed supporting query is not evidence of zero matches.
+Exact accepted inputs are defined in `agent/toolkit.py` and tool docstrings.
+
+| Tool | Purpose / main inputs | Returned evidence |
+|---|---|---|
+| `search_logs` | Full-text phrase/all/any search; `query`, dataset, severity, team, dates, limit | Limited matching log rows, full-match total when available, effective mode, pattern statistics and truncation |
+| `get_context` | Retrieve an anchor's context; `log_id` (log/VM/request identifier), `fenster_sek`, limit | Anchor and surrounding messages; BGL midplane, OpenStack VM/request or component context; scope exceptions and supporting queries |
+| `vm_dauer` | Compare spawn observations; optional `instance_id`, limit | Exact durations, full-corpus median, rank and observation count; scope exception |
+| `top_patterns` | Recurring warning/error templates; team, dataset, dates, limit | Line/event counts, alerts, identifiers, full-scope counts and full matching-line denominator |
+| `pattern_trend` | Recurrence over time; template or team, dataset, dates, interval | Bucket counts, approximate events, scoped observations and explicit gaps |
+| `priority_ranking` | Prioritize problems or teams; dataset, team, dates, `group_by`, limit | Frequency/reach/severity/trend/alert factors, comparison groups, score and unscored rows |
+
+The agent chooses these tools from their descriptions; it does not generate
+arbitrary SQL. `search_distribution` and `period_comparison` reuse the same
+query conventions for direct UI charts.
+
 ## Agent-Entwicklung mit OpenAI (Kardo, Person 4)
 
 Das Agent-Grundgeruest verwendet das offizielle OpenAI-Python-SDK und die Responses API.
@@ -19,7 +156,7 @@ Fuer die Agent-Entwicklung unter Windows mit vorhandenem Python 3.13:
 py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-agent.txt
 # Nur wenn .env noch nicht existiert:
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 In `.env` den eigenen `OPENAI_API_KEY` lokal eintragen. Fuer die ersten Tests ist
@@ -31,29 +168,7 @@ Drain3-Hinweis fuer Python 3.13 in `requirements.txt` beachten.
 
 ## Setup
 
-```powershell
-# 1. Abhängigkeiten (Python 3.11/3.12 empfohlen) in einer virtuellen Umgebung
-python -m venv .venv
-.venv\Scripts\Activate.ps1            # macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
-
-# 2. SereneDB starten (mountet diesen Ordner nach /data, Port nur lokal auf 127.0.0.1)
-docker compose up -d
-
-# 2b. EINMALIG: Login ohne Passwort erlauben. postgres ist ab Werk nur über Loopback IM Container
-#     vertraut; Verbindungen von Windows/macOS kommen über das Docker-Netz und scheitern sonst mit
-#     "password authentication failed". Die Regel liegt im Volume serenedb-data und bleibt erhalten.
-docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -c "SET hba = 'host all all 0.0.0.0/0 trust'"
-
-# 3. Rohdaten von Zenodo entpacken: data/BGL/BGL.log, data/OpenStack/openstack_*.log
-
-# 4. Vorbereiten: Parsing + Drain3-Templates -> out/*.parquet  (ca. 2 Minuten)
-python ingest/prepare.py data/BGL/BGL.log "data/OpenStack/openstack_*.log"
-#    schneller Testlauf: python ingest/prepare.py data/BGL/BGL.log --limit 200000
-
-# 5. In SereneDB laden + Volltextindex  (ca. 10 Sekunden, beliebig oft wiederholbar)
-python ingest/run_sql.py ingest/load.sql
-```
+Use the jury quick-start above for the complete installation and load workflow.
 
 Docs-MCP für Coding-Agenten: `claude mcp add --transport http serenedb-docs https://api.serenedb.com/mcp`
 
@@ -63,11 +178,11 @@ From the repository root, after installing requirements and loading the database
 
 ```powershell
 # Uses Python 3.11/3.12 and Streamlit 1.66+; theme loads from .streamlit/config.toml
-Copy-Item .env.example .env    # first setup only; preserve an existing .env
+# The local setup script already created .env; preserve it.
 .\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
 ```
 
-Open http://localhost:8501. Direct exploration needs only SereneDB; no model API
+Open http://127.0.0.1:8501. Direct exploration needs only SereneDB; no model API
 key is required. The application loads `.env` before importing database tools.
 An unavailable database shows setup guidance and a reconnect button, not demo numbers.
 
@@ -163,7 +278,7 @@ SereneDB instance before the final demo.
 - Integrated main commit `88df103` (Person 4's OpenAI agent) on `feat/ui`.
 - Full official public corpus loaded: 4,747,963 BGL + 207,820 OpenStack rows;
   399 + 71 templates, zero unparsed rows and complete ownership mapping.
-- All 69 regression tests pass with the real database fixtures enabled.
+- The initial 69 regression tests passed with the real database fixtures enabled.
   The six-tool real-corpus check and full analytics acceptance also pass.
 - Three English UI investigations completed with status `ok`, executed query
   evidence and role-specific answers. Combined conservative API estimate: $0.18583
