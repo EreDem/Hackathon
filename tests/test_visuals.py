@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone, timedelta
 import unittest
 from unittest.mock import patch
 
@@ -8,6 +9,45 @@ import ui
 
 
 class VisualTests(unittest.TestCase):
+    def test_same_second_events_are_counted_and_anchor_is_retained(self):
+        start = datetime(2017, 5, 16, 3, 19, 45, 356000, tzinfo=timezone.utc)
+        rows = [dict(id=i, ts=start+timedelta(microseconds=i), component='worker', level='ERROR') for i in range(12)]
+        figure = ui.timeline(rows, anchor_id=5)
+        self.assertEqual(len(figure.data[0].x), 1)
+        self.assertEqual(figure.data[0].customdata[0][0], 12)
+        self.assertEqual(figure.data[0].marker.size[0], 20)
+        self.assertIn('ERROR ×12', figure.data[0].text)
+        self.assertGreaterEqual(figure.layout.xaxis.range[1]-figure.layout.xaxis.range[0], timedelta(seconds=2))
+        self.assertFalse(figure.layout.xaxis.rangeslider.visible)
+
+    def test_time_views_show_coverage_without_turning_gaps_into_zero(self):
+        start = datetime(2017, 5, 16, tzinfo=timezone.utc)
+        rows = [dict(dataset='OpenStack', zeit=start+timedelta(hours=i), n=n,
+                     datenluecke=n is None, beobachtete_logs=0 if n is None else 20)
+                for i, n in enumerate([3, 0, None])]
+        figure = ui.trend(rows)
+        self.assertEqual(list(figure.data[0].y), [3, 0, None])
+        self.assertEqual(list(figure.data[-1].z[0]), [1, 1, 0])
+        self.assertFalse(figure.layout.xaxis.rangeslider.visible)
+        self.assertEqual(figure.layout.xaxis.range[1]-figure.layout.xaxis.range[0], timedelta(hours=3))
+
+    def test_scatter_log_axis_preserves_exact_coordinates_and_duplicates(self):
+        rows = [dict(gruppe=name, haeufigkeit=n, reichweite=reach, score=.5, schweregrad=2)
+                for name, n, reach in [('A', 1, 1), ('B', 1, 1), ('C', 3000, 2)]]
+        figure = ui.reach_scatter(rows)
+        self.assertEqual(figure.layout.xaxis.type, 'log')
+        self.assertEqual(list(figure.data[0].x), [1, 1, 3000])
+        self.assertIn('A, B', figure.data[0].customdata[0])
+        self.assertEqual(list(figure.data[0].text), ['2 problems', '', ''])
+        self.assertEqual(figure.layout.yaxis.dtick, 1)
+
+    def test_sparse_heatmap_uses_complete_integer_legend(self):
+        rows = [dict(kind='time', zeit=datetime(2017, 5, 16, tzinfo=timezone.utc), observed_logs=10, n=3),
+                dict(kind='cell', zeit=datetime(2017, 5, 16, tzinfo=timezone.utc), resource='A', n=3)]
+        figure = ui.resource_heatmap(rows)
+        self.assertEqual(list(figure.data[0].colorbar.ticktext), ['0', '1', '2', '3'])
+        self.assertLessEqual(figure.layout.height, 250)
+
     def test_empty_charts(self):
         for figure in [ui.search_bursts([]), ui.resource_heatmap([]), ui.pareto([]),
                        ui.pattern_comparison({}), ui.pattern_comparison({}, heatmap=True),

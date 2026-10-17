@@ -47,21 +47,56 @@ def finish(fig, x_title=None, y_title=None, height=350):
 
 
 def timeline(rows, anchor_id=None):
+    buckets = {}
+    for row in rows:
+        if row.get('ts') is not None:
+            key = (pd.Timestamp(row['ts']).floor('s'), row.get('component') or 'Unknown component', row.get('level'))
+            buckets.setdefault(key, []).append(row)
     fig = go.Figure()
     for level, color in LEVELS.items():
-        group = [r for r in rows if r.get("level") == level and r.get("ts") is not None]
+        group = [(key, values) for key, values in buckets.items() if key[2] == level]
         if not group:
             continue
         fig.add_trace(go.Scatter(
-            x=[r["ts"] for r in group], y=[r.get("component") or "Unknown component" for r in group],
-            mode="markers", name=level,
-            marker=dict(color=color, symbol=SYMBOLS[level], size=[18 if r["id"] == anchor_id else 10 for r in group],
+            x=[key[0] for key, values in group], y=[key[1] for key, values in group],
+            mode="markers+text", name=level,
+            text=[f'{level} ×{len(values)}' if len(group)<=12 or any(r['id']==anchor_id for r in values) else '' for key, values in group], textposition='top center',
+            marker=dict(color=color, symbol=SYMBOLS[level], size=[20 if any(r['id'] == anchor_id for r in values) else 12 for key, values in group],
                         line=dict(width=1, color="#E6EDF7")),
-            customdata=[[str(r["id"]), level, str(r.get("message", ""))[:240]] for r in group],
-            hovertemplate="%{x}<br>%{y}<br>Log %{customdata[0]} · %{customdata[1]}<br>%{customdata[2]}<extra></extra>",
+            customdata=[[len(values), ', '.join(str(r['id']) for r in values[:8]),
+                str(min(pd.Timestamp(r['ts']) for r in values)), str(max(pd.Timestamp(r['ts']) for r in values))] for key, values in group],
+            hovertemplate="%{y}<br>%{customdata[0]} log lines in this second<br>First %{customdata[2]}<br>Last %{customdata[3]}<br>Example log IDs %{customdata[1]}<extra>%{fullData.name}</extra>",
         ))
-    fig.update_xaxes(rangeslider_visible=True)
-    return finish(fig, "Recorded time", "Component", 390)
+    finish(fig, 'Recorded time · one-second buckets', 'Component', max(280, min(550, 90*len({k[1] for k in buckets})+180)))
+    times = [key[0] for key in buckets]
+    if times:
+        start, end = min(times), max(times)
+        padding = max(pd.Timedelta(seconds=1), (end-start)*.05)
+        fig.update_xaxes(type='date', range=[start-padding, end+padding], nticks=5,
+                         dtick=1000 if end-start<=pd.Timedelta(seconds=5) else None,
+                         tickformat='%H:%M:%S<br>%d %b', hoverformat='%Y-%m-%d %H:%M:%S')
+    return fig
+
+
+def time_view(fig, times, observed, y_title):
+    """Use the actual bucket extent and an explicit coverage strip, not a duplicate slider."""
+    finish(fig, 'Recorded time', y_title, 390)
+    if not times:
+        return fig
+    stamps = sorted(pd.to_datetime(times, utc=True))
+    steps = [b-a for a, b in zip(stamps, stamps[1:]) if b>a]
+    step = min(steps) if steps else pd.Timedelta(hours=1)
+    fig.add_trace(go.Heatmap(x=times, y=['Coverage'], z=[[1 if n else 0 for n in observed]],
+        customdata=[observed], yaxis='y2', showscale=False, zmin=0, zmax=1,
+        colorscale=[[0, '#667185'], [.49, '#667185'], [.5, '#51D6E4'], [1, '#51D6E4']],
+        hovertemplate='%{x}<br>Scoped log lines %{customdata}<br>Gray = no observation; cyan = logs recorded<extra></extra>'))
+    maximum = max((n for trace in fig.data if trace.type == 'scatter' for n in trace.y if n is not None), default=0)
+    fig.update_layout(yaxis=dict(domain=[.25, 1], range=[0, max(1, maximum*1.12)], tickformat=',d', dtick=1 if maximum<=10 else None),
+                      yaxis2=dict(domain=[0, .05], anchor='x', tickfont_size=10, showgrid=False))
+    fig.update_xaxes(type='date', range=[stamps[0]-step/2, stamps[-1]+step/2], nticks=4,
+        tickformat='%d %b<br>%H:%M' if stamps[-1]-stamps[0] < pd.Timedelta(days=8) else '%d %b<br>%Y',
+        hoverformat='%Y-%m-%d %H:%M', rangeslider_visible=False)
+    return fig
 
 
 def pattern_bars(rows, metric="n"):
@@ -89,8 +124,9 @@ def trend(rows, metric="n"):
             customdata=[[r.get("beobachtete_logs"), r.get("ereignisse"), r.get("n")] for r in group],
             hovertemplate="%{x}<br>Value %{y}<br>Observed lines %{customdata[0]}<br>Approx. events %{customdata[1]}<br>Matching lines %{customdata[2]}<extra>%{fullData.name}</extra>",
         ))
-    fig.update_xaxes(rangeslider_visible=True)
-    return finish(fig, "Recorded time · gaps mean no observation", LABELS[metric], 360)
+    times = sorted({r['zeit'] for r in rows}, key=str)
+    coverage = {r['zeit']: r.get('beobachtete_logs') for r in rows}
+    return time_view(fig, times, [coverage[t] for t in times], LABELS[metric])
 
 
 def ranking_groups(rows):
@@ -114,14 +150,29 @@ def priority_bars(rows):
 
 def reach_scatter(rows):
     scored = [r for r in rows if r.get("score") is not None and r.get("reichweite") is not None]
+    coincident = {}
+    for row in scored:
+        coincident.setdefault((row['haeufigkeit'], row['reichweite']), []).append(row['gruppe'])
+    labeled = set()
+    labels = []
+    for row in scored:
+        position = (row['haeufigkeit'], row['reichweite'])
+        labels.append(f'{len(coincident[position])} problems' if len(coincident[position])>1 and position not in labeled else '')
+        labeled.add(position)
     fig = go.Figure(go.Scatter(
-        x=[r["haeufigkeit"] for r in scored], y=[r["reichweite"] for r in scored], mode="markers",
+        x=[r["haeufigkeit"] for r in scored], y=[r["reichweite"] for r in scored], mode="markers+text",
+        text=labels, textposition='top right',
         marker=dict(size=[12 + 5 * r["schweregrad"] for r in scored], color=[r["score"] for r in scored],
                     colorscale=[[0, "#52758F"], [1, CYAN]], showscale=False, line=dict(color="#E6EDF7", width=1)),
-        customdata=[[r["gruppe"], r["score"], r["schweregrad"]] for r in scored],
-        hovertemplate="%{customdata[0]}<br>Frequency %{x}<br>Observed reach %{y}<br>Score %{customdata[1]:.4f}<br>Severity weight %{customdata[2]}<extra></extra>",
+        customdata=[[r["gruppe"], r["score"], r["schweregrad"], ', '.join(coincident[(r['haeufigkeit'], r['reichweite'])])] for r in scored],
+        hovertemplate="%{customdata[0]}<br>Frequency %{x}<br>Observed reach %{y}<br>Score %{customdata[1]:.4f}<br>Severity weight %{customdata[2]}<br>At this position: %{customdata[3]}<extra></extra>",
     ))
-    return finish(fig, "Frequency", "Observed identifiers")
+    finish(fig, 'Frequency · logarithmic scale', 'Observed identifiers')
+    if scored and all(r['haeufigkeit'] > 0 for r in scored):
+        fig.update_xaxes(type='log', tickformat=',d')
+    fig.update_yaxes(tickformat=',d', dtick=1 if scored and max(r['reichweite'] for r in scored)<10 else None,
+                     rangemode='tozero')
+    return fig
 
 
 def durations(rows, selected=None):
@@ -151,8 +202,7 @@ def search_bursts(rows):
         mode='lines+markers', connectgaps=False, line_color=CYAN,
         customdata=[[r['observed_logs']] for r in buckets],
         hovertemplate='%{x}<br>Matching lines %{y}<br>All scoped lines %{customdata[0]}<extra></extra>'))
-    fig.update_xaxes(rangeslider_visible=True)
-    return finish(fig, 'Recorded time · gaps mean no observation', 'Matching log lines')
+    return time_view(fig, [r['zeit'] for r in buckets], [r['observed_logs'] for r in buckets], 'Matching log lines')
 
 
 def resource_heatmap(rows):
@@ -161,13 +211,26 @@ def resource_heatmap(rows):
     cells = {(r['resource'], r['zeit']): r['n'] for r in rows if r['kind'] == 'cell'}
     observed = {r['zeit']: r['observed_logs'] for r in rows if r['kind'] == 'time'}
     counts = [[cells.get((resource, t), 0) if observed.get(t) else None for t in times] for resource in resources]
-    ticks = [0, 1, 10, 100, 1000, 10000, 100000]
+    maximum = max((n for row in counts for n in row if n is not None), default=0)
+    logarithmic = maximum > 20
+    ticks = sorted({n for n in [0, 1, 2, 3, 5, 10, 100, 1000, 10000, 100000, maximum] if n <= maximum})
+    if logarithmic:
+        ticks = sorted({n for n in [0, 1, 10, 100, 1000, 10000, 100000, maximum] if n <= maximum})
     fig = go.Figure(go.Heatmap(x=times, y=resources, customdata=counts,
-        z=[[log10(n+1) if n is not None else None for n in row] for row in counts],
+        z=[[log10(n+1) if n is not None else None for n in row] for row in counts] if logarithmic else counts,
+        zmin=0, zmax=log10(maximum+1) if logarithmic else max(1, maximum),
         colorscale=[[0, '#17283E'], [1, CYAN]],
-        colorbar=dict(title='Lines · log', tickvals=[log10(n+1) for n in ticks], ticktext=[str(n) for n in ticks]),
+        colorbar=dict(title='Lines · log' if logarithmic else 'Log lines',
+                      tickvals=[log10(n+1) if logarithmic else n for n in ticks], ticktext=[f'{n:,}' for n in ticks]),
         hovertemplate='%{y}<br>%{x}<br>Matching lines %{customdata}<extra></extra>'))
-    return finish(fig, 'Recorded time', 'Top observed resources', max(320, len(resources)*24))
+    finish(fig, 'Recorded time', 'Resource', max(230, len(resources)*26+110))
+    fig.update_yaxes(tickmode='array', tickvals=resources,
+                     ticktext=[r.rsplit('.', 1)[-1] if len(r)>24 and '.' in r else r for r in resources])
+    if times:
+        stamps = sorted(pd.to_datetime(times, utc=True))
+        step = stamps[1]-stamps[0] if len(stamps)>1 else pd.Timedelta(hours=1)
+        fig.update_xaxes(range=[stamps[0]-step/2, stamps[-1]+step/2], nticks=4, tickformat='%d %b<br>%H:%M' if stamps[-1]-stamps[0]<pd.Timedelta(days=8) else '%d %b<br>%Y')
+    return fig
 
 
 def pareto(rows):

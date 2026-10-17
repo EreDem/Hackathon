@@ -101,7 +101,7 @@ def render_context():
             return
         anchor = result.get('meta', {}).get('anchor', {})
         ui.chart(ui.timeline(rows, anchor.get('id')), 'Events by timestamp, component and labeled severity', 'event_timeline')
-        st.caption('Larger marker = selected anchor. Shape and legend identify severity. Use the slider to zoom.')
+        st.caption('Markers group log lines by second, component and severity; labels show their counts. Larger marker includes the selected anchor. Hover shows exact first/last times and example IDs; individual messages remain below. Drag to zoom; double-click to reset.')
         selected = st.selectbox('Event details', [r['id'] for r in rows],
                                 index=next((i for i, r in enumerate(rows) if r['id'] == anchor.get('id')), 0),
                                 key=f"detail_{s.generation}_{anchor.get('id')}")
@@ -270,7 +270,7 @@ else:
                 summary = next((r for r in rows if r['kind'] == 'summary'), {})
                 ui.chart(ui.search_bursts(rows), 'All search matches over time, with observation gaps', 'bursts')
                 ui.chart(ui.resource_heatmap(rows), 'Matching lines by resource and time', 'resource_map')
-                st.caption('Heatmap color uses a logarithmic scale to keep rare and large bursts visible together. Hover shows exact line counts.')
+                st.caption('Coverage strip: cyan = scoped logs recorded, gray = no observation. Heatmap color uses a linear scale for counts up to 20 and a logarithmic scale for larger bursts; hover shows exact counts.')
                 st.caption(f"Full-match aggregation; map shows up to 20 {distribution['meta']['resource_unit'].lower()}s. Missing resource: {summary.get('missing_resource', 0):,} lines; missing time: {summary.get('missing_time', 0):,} lines. Blank columns mean no scoped logs, not zero errors. Resolution: {distribution['meta']['filter']['intervall']}.")
                 cells = [r for r in rows if r['kind'] == 'cell']
                 cell = st.selectbox('Inspect a resource/time cell', range(len(cells)), index=None,
@@ -340,7 +340,7 @@ else:
                     st.subheader('Recurrence over time')
                     ui.notices(trend_result)
                     ui.chart(ui.trend(trend_result['daten'], metric), 'Pattern trend with observation gaps preserved', 'trend_chart')
-                    st.caption('A gap means no logs were observed; zero means logs were observed without this matching error. Drag to zoom or use the time slider.')
+                    st.caption('A gap means no scoped logs were observed; zero means logs were recorded without this matching error. Coverage strip: cyan = recorded logs, gray = no observation. Drag to zoom; double-click to reset.')
                 if st.button('Compare leading patterns'):
                     for slot in list(s.results):
                         if slot.startswith('comparison_'):
@@ -396,7 +396,7 @@ else:
                         with st.container(border=True):
                             st.subheader('Frequency × reach')
                             ui.chart(ui.reach_scatter(scored), 'Observed frequency versus reach; bubble size represents severity', 'reach_chart')
-                    st.caption('Bubble size = severity weight. Hover for exact measurements. Charts share this comparison group only.')
+                    st.caption('Frequency uses a logarithmic axis so rare problems remain visible. Bubble size = severity weight. Coincident points retain their exact coordinates; hover lists the problems at that position. Charts share this comparison group only.')
                     st.dataframe(ui.table(scored, ['rang', 'gruppe', 'teams', 'n', 'ereignisse', 'haeufigkeit', 'reichweite', 'score']), hide_index=True, alt='Priorities and supporting measurements')
                     chosen = st.selectbox('Explain a priority', [r['gruppe'] for r in scored], key=f'priority_{s.generation}_{group}')
                     item = next(r for r in scored if r['gruppe'] == chosen)
