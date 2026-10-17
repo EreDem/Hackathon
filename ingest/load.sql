@@ -6,7 +6,8 @@
 --
 -- Ausführen:  python ingest/run_sql.py ingest/load.sql   (aus dem Repo-Hauptordner)
 --
--- ⚠ Syntax stammt aus der SereneDB-Doku (Quick Start, Data Import), lokal noch nicht getestet.
+-- Getestet mit SereneDB 26.10.1 (17.10.): ca. 10 s für 4,95 Mio. Zeilen inkl. Index, beliebig oft wiederholbar.
+-- Login aus Windows klappt erst nach der einmaligen trust-Regel (siehe README, Setup 2b).
 --   Bei Fehlern: Docs-MCP fragen oder in SQL nachschlagen:  SELECT * FROM sdb_docs.search('read_parquet');
 
 -- 1) Tabellen frisch anlegen (Skript kann beliebig oft laufen)
@@ -19,8 +20,8 @@ CREATE TABLE templates AS SELECT * FROM read_parquet('/data/out/templates.parque
 CREATE TABLE ownership AS SELECT * FROM read_csv('/data/ingest/ownership.csv', header = true);
 
 -- 2) Volltextindex auf der Nachricht (für search_logs / Engineer)
---    Falls das Wörterbuch schon existiert, die CREATE-Zeile beim zweiten Lauf ggf. auskommentieren.
-CREATE TEXT SEARCH DICTIONARY english AS
+--    Reihenfolge laut Doku: erst laden, dann indexieren (ergibt einen kompakteren Index).
+CREATE TEXT SEARCH DICTIONARY IF NOT EXISTS english AS
     split_text(case := 'lower') WITH (frequency, position, offset);
 CREATE INDEX logs_idx ON logs USING inverted(id, message english);
 VACUUM (REFRESH_TABLE) logs;    -- danach findet die Suche auch die neu geladenen Zeilen
@@ -41,6 +42,6 @@ FROM logs l LEFT JOIN ownership o ON o.dataset = l.dataset AND o.component = l.c
 WHERE l.level IN ('ERROR', 'FATAL')
 GROUP BY team ORDER BY errors DESC;
 
--- Beispiel Engineer: Volltextsuche
+-- Beispiel Engineer: Volltextsuche (Phrase aus BGL-Alert KERNDTLB, muss Treffer liefern)
 SELECT id, ts, component, message FROM logs_idx
-WHERE message @@ ts_phrase('connection refused') LIMIT 10;
+WHERE message @@ ts_phrase('data TLB error') LIMIT 10;

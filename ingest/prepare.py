@@ -13,8 +13,8 @@ Was passiert:
   5. Danach lädt load.sql alles per read_parquet in SereneDB – kein Python-INSERT nötig.
 
 Benutzung:
-    python ingest/prepare.py data/BGL.log "data/openstack_*.log"     (aus dem Repo-Hauptordner)
-    python ingest/prepare.py data/BGL.log --limit 200000        # schneller Testlauf
+    python ingest/prepare.py data/BGL/BGL.log "data/OpenStack/openstack_*.log"     (aus dem Repo-Hauptordner)
+    python ingest/prepare.py data/BGL/BGL.log --limit 200000        # schneller Testlauf
     Optionen: --out out/  --sim-bgl 0.4  --sim-openstack 0.9  --limit N
 
 Installation:
@@ -61,18 +61,36 @@ LEVEL_RANK = {"DEBUG": 0, "INFO": 1, "WARN": 2, "ERROR": 3, "FATAL": 4}
 #    oder None, wenn die Zeile nicht passt.
 # ---------------------------------------------------------------------------
 
+BGL_TYPES = {"RAS", "NULL"}
+BGL_LEVELS = {"INFO", "WARNING", "SEVERE", "ERROR", "FATAL", "FAILURE"}
+# Rückfall für Zeilen mit verschobenen Feldern: "Typ Komponente Level" irgendwo nach der Zeit suchen
+BGL_TAIL_RE = re.compile(r"(?:^|\s)(RAS|NULL)\s+(\S+)\s+(INFO|WARNING|SEVERE|ERROR|FATAL|FAILURE)(?:\s+(.*))?$")
+
+
 def parse_bgl(line: str) -> dict | None:
     """
     BGL (Blue Gene/L Supercomputer), Beispiel:
     - 1117838570 2005.06.03 R02-M1-N0-C:J12-U11 2005-06-03-15.42.50.675872 R02-M1-N0-C:J12-U11 RAS KERNEL INFO instruction cache parity error corrected
     Felder: Label, Unix-Zeit, Datum, Node, Zeit, Node, Typ, Komponente, Level, Nachricht
     Label '-' = normal, sonst Alert-Kategorie (z. B. KERNDTLB, APPREAD) = echte Störung laut Datensatz
+
+    316 Zeilen weichen ab und laufen über BGL_TAIL_RE:
+    - 306x fehlt das zweite Node-Feld:  - 1119415930 2005.06.21 - 2005-06-21-21.52.10.214285 RAS KERNEL FATAL Kill job …
+    - 10x steht vor "RAS KERNEL INFO" ein Bruchstück einer anderen Meldung (wird verworfen)
     """
     parts = line.split(maxsplit=9)
-    if len(parts) < 9:
+    if len(parts) < 5:
         return None
-    label, unix_ts, _date, node, ts_text, _node2, typ, component, level = parts[:9]
-    message = parts[9] if len(parts) > 9 else ""
+    label, unix_ts, _date, node, ts_text = parts[:5]
+    if len(parts) >= 9 and parts[6] in BGL_TYPES and parts[8] in BGL_LEVELS:
+        typ, component, level = parts[6:9]
+        message = parts[9] if len(parts) > 9 else ""
+    else:
+        m = BGL_TAIL_RE.search(line.split(maxsplit=5)[5]) if len(parts) > 5 else None
+        if not m:
+            return None
+        typ, component, level, message = m.group(1, 2, 3, 4)
+        message = message or ""
     try:
         ts = datetime.strptime(ts_text, "%Y-%m-%d-%H.%M.%S.%f").replace(tzinfo=timezone.utc)
     except ValueError:
@@ -162,7 +180,11 @@ MASKS: list[tuple[str, str]] = [
     (r"\b0x[0-9a-fA-F]+\b", "HEX"),
     (r"\b(?=[0-9a-fA-F]*\d)[0-9a-fA-F]{16,}\b", "ID"),                               # Hashes, lange IDs
     (r"(?<![\w/])/(?:[\w.\-]+/)+[\w.\-]*", "PATH"),
-    (r"(?<![A-Za-z_])-?\d+(?:\.\d+)?(?:ms|s|kb|mb|gb|%)?(?![A-Za-z_])", "NUM"),
+    # Hex-Wörter ohne 0x (BGL-Registerwerte wie 00082d70). Erst NACH PATH und nicht an '-' angrenzend,
+    # sonst zerschneidet die Regel UUIDs in Pfaden (/instances/<uuid>_del) -> Tausende Templates
+    (r"(?<![\w-])(?=[0-9a-fA-F]*\d)[0-9a-fA-F]{8,15}(?![\w-])", "HEX"),
+    # Nur ganze Zahlen-Tokens: davor/danach auch keine Ziffer, sonst wird aus 512M -> <NUM>2M
+    (r"(?<![A-Za-z0-9_])-?\d+(?:\.\d+)?(?:ms|s|[kKmMgG][bB]?|%)?(?![A-Za-z0-9_])", "NUM"),
 ]
 
 
@@ -385,7 +407,7 @@ if __name__ == "__main__":
     ap.add_argument("--sim-openstack", type=float, default=0.9, help="Drain-Schwelle für OpenStack")
     ap.add_argument("--limit", type=int, help="max. Zeilen pro Datensatz (für Testläufe)")
     a = ap.parse_args()
-    # Platzhalter selbst auflösen (PowerShell/cmd machen das nicht): "data/openstack_*.log"
+    # Platzhalter selbst auflösen (PowerShell/cmd machen das nicht): "data/OpenStack/openstack_*.log"
     files = []
     for f in a.files:
         matches = sorted(Path().glob(str(f))) if any(ch in str(f) for ch in "*?[") else [f]

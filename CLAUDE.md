@@ -74,17 +74,22 @@ Prioritäts-Score (transparent, Faktoren in UI zeigen):
 
 ## SereneDB – was wir wissen
 
-- Docker: `docker compose up -d` (Image `serenedb/serenedb`, Port **7890**, keine Zugangsdaten nötig).
-  Repo-Ordner ist im Container unter **`/data`** gemountet. Pfade in `read_parquet`/`read_csv` sind **Container-Pfade**.
+- Docker: `docker compose up -d` (Image `serenedb/serenedb`, läuft als SereneDB 26.10.1, Port **7890** nur auf 127.0.0.1,
+  Volume `serenedb-data`). Repo-Ordner ist im Container unter **`/data`** gemountet. Pfade in `read_parquet`/`read_csv` sind **Container-Pfade**.
+- **Login**: `postgres` hat kein Passwort und ist laut Doku nur über Loopback **im** Container vertraut. Verbindungen aus Windows
+  kommen über das Docker-Netz → `password authentication failed`. Team-Entscheidung: ohne Passwort, dafür **einmalig** nach dem ersten Start:
+  `docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -c "SET hba = 'host all all 0.0.0.0/0 trust'"` (liegt im Volume).
 - Verbindung: `psycopg.connect("host=localhost port=7890 dbname=postgres user=postgres")`.
 - Keine verschachtelten Transaktionen, keine Named Cursors (`DECLARE CURSOR`). Für große Ergebnisse `cur.stream(...)`.
-- Volltext (Syntax aus Quick Start, **noch nicht getestet**):
+- Volltext (**getestet**, Index vollständig: Treffer = Template-Zählung bzw. `LIKE`-Zählung):
   ```sql
-  CREATE TEXT SEARCH DICTIONARY english AS split_text(case := 'lower') WITH (frequency, position, offset);
-  CREATE INDEX logs_idx ON logs USING inverted(id, message english);
-  VACUUM (REFRESH_TABLE) logs;   -- nach dem Laden nötig
-  SELECT id, message FROM logs_idx WHERE message @@ ts_phrase('connection refused');
+  CREATE TEXT SEARCH DICTIONARY IF NOT EXISTS english AS split_text(case := 'lower') WITH (frequency, position, offset);
+  CREATE INDEX logs_idx ON logs USING inverted(id, message english);   -- erst laden, dann indexieren
+  VACUUM (REFRESH_TABLE) logs;
+  -- nicht indexierte Spalten (ts, component …) lassen sich direkt aus logs_idx lesen (Lookup in die Tabelle)
+  SELECT id, ts, component, message FROM logs_idx WHERE message @@ ts_phrase('data TLB error');
   ```
+- Funktioniert auch: `DESCRIBE`, `read_csv(…, header = true)` (nötig bei reinen Text-Spalten), `GROUP BY ALL`.
 
 ## Meine Rolle: Person 1 – Daten & Laden
 
@@ -92,24 +97,33 @@ Prioritäts-Score (transparent, Faktoren in UI zeigen):
 - Sonntag: Tools von Person 2/3 gegen bekannte Fälle testen, README-Abschnitt Daten/Ownership, Backup-Video.
 - Andere: 2 Suche (Engineer-Tools, Index), 3 Analytics (Lead/Manager-Tools, Score), 4 Agent, 5 UI/Demo/Pitch.
 
-## Stand (Sa., 17.10., 01:20)
+## Stand (Sa., 17.10., 02:51)
 
-- `ingest/prepare.py`: **getestet** mit Loghub-Samples (je 2.000 Zeilen). BGL 105 Templates, 97 % korrekt gruppiert (Drain-Schwelle 0.4).
-  OpenStack braucht Schwelle **0.9** (sonst verschmelzen „VM Paused/Resumed“, GET/POST), 44 Templates (Referenz 43).
-  Ca. 25.000 Zeilen/s, Streaming, schreibt Parquet in 100k-Blöcken.
-- `ingest/load.sql`, `ingest/run_sql.py`: geschrieben, **gegen SereneDB noch nicht getestet**.
-- `ingest/ownership.csv`: Entwurf. `prepare.py` schreibt `out/components.csv` mit allen echten Komponenten → abgleichen.
+- **Pipeline läuft komplett auf echten Daten**: `prepare.py` (~125 s, 0 % nicht erkannt) → `load.sql` (~10 s, wiederholbar) → SereneDB.
+  Python-Umgebung: `.venv` im Repo (3.12.10) → `.venv\Scripts\python …` oder `.venv\Scripts\Activate.ps1`.
+- Daten: `data/BGL/BGL.log`, `data/OpenStack/openstack_{abnormal,normal1,normal2}.log`;
+  `data/OpenStack/anomaly_labels.txt` nennt die 4 VM-IDs mit eingespielten Fehlern (Grundwahrheit für Tests).
+- **BGL**: 4.747.963 Zeilen, 399 Templates, 348.460 Alert-Zeilen (= Loghub-Angabe), 41 Alert-Kategorien.
+  Gewichtet 90 % der Alert-Zeilen liegen im Haupt-Template ihrer Kategorie (z. B. KERNDTLB → BGL-0019 zu 100 %).
+  **OpenStack**: 207.820 Zeilen, 71 Templates. Drain-Schwellen BGL 0.4, OpenStack 0.9 (sonst verschmelzen „VM Paused/Resumed“).
+- Heute behoben: NUM-Maske nur für ganze Tokens (vorher `512M` → `<NUM>2M`), neue HEX-Regel für Registerwerte
+  (muss **nach** PATH stehen, sonst zerschneidet sie UUIDs in Pfaden → 4.000+ Templates), BGL-Parser-Rückfall für 316 Zeilen
+  mit verschobenen Feldern (306× „Kill job … timed out“ waren INFO statt FATAL), `ownership.csv` + 2 Komponenten.
+  Die Loghub-Validierung (97 % auf 2.000 Zeilen) stammt noch von den alten Masken, Referenzdateien liegen nicht im Repo.
+- **Erkenntnisse fürs Team**:
+  - BGL: FATAL ≠ Störung. Nur 41 % der FATAL-Zeilen haben ein Alert-Label, aber alle Alert-Zeilen sind FATAL → Alertfaktor ist wichtig.
+  - OpenStack: **alle 196** ERROR/FATAL-Zeilen stammen aus `oslo_service.periodic_task` (Cloud Compute) und
+    `keystonemiddleware.auth_token` (Cloud API). Cloud Virtualization/Scheduling haben 0 → `top_patterns` für OpenStack mit WARN (3.118).
+  - BGL-`ts` ist eigentlich Ortszeit (UTC−7), als UTC markiert. Innerhalb des Datensatzes konsistent.
 - Bekannt: `drain3` baut unter **Python 3.13** nicht mit neuem setuptools. Lösung: `pip install "setuptools==69.*" wheel`
   und dann `pip install --no-build-isolation drain3`, oder Python 3.11/3.12.
 
 ## Nächste Schritte für mich
 
-1. `docker compose up -d`, Docs-MCP verbinden.
-2. Zenodo-Daten nach `data/` entpacken, Dateinamen prüfen.
-3. `python ingest/prepare.py data/BGL.log --limit 200000` (Testlauf), Bericht prüfen.
-4. Volllauf: `python ingest/prepare.py data/BGL.log "data/openstack_*.log"`.
-5. `python ingest/run_sql.py ingest/load.sql`, Fehler mit Docs-MCP beheben.
-6. `out/components.csv` mit `ownership.csv` abgleichen, Team informieren.
+1. Qualitätsbericht ans Team (Zahlen und Erkenntnisse oben).
+2. Optional: `anomaly_labels.txt` als Tabelle `known_anomalies` laden (4 VM-IDs) für Tests und Engineer-Demo.
+3. Sonntag: Tools von Person 2/3 gegen bekannte Fälle testen (KERNDTLB → BGL-0019, die 4 Anomalie-VMs),
+   README-Abschnitt Daten/Ownership, Backup-Video.
 
 ## Konventionen
 

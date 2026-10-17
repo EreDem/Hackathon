@@ -6,20 +6,27 @@ Ablauf: **Frage → Belege (SereneDB) → Empfehlung (KI-Agent)**. Leitprinzip: 
 
 ## Setup
 
-```bash
-# 1. Abhängigkeiten (Python 3.11/3.12 empfohlen)
+```powershell
+# 1. Abhängigkeiten (Python 3.11/3.12 empfohlen) in einer virtuellen Umgebung
+python -m venv .venv
+.venv\Scripts\Activate.ps1            # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 
-# 2. SereneDB starten (mountet diesen Ordner nach /data)
+# 2. SereneDB starten (mountet diesen Ordner nach /data, Port nur lokal auf 127.0.0.1)
 docker compose up -d
 
-# 3. Rohdaten von Zenodo nach data/ entpacken (BGL.log, openstack_*.log)
+# 2b. EINMALIG: Login ohne Passwort erlauben. postgres ist ab Werk nur über Loopback IM Container
+#     vertraut; Verbindungen von Windows/macOS kommen über das Docker-Netz und scheitern sonst mit
+#     "password authentication failed". Die Regel liegt im Volume serenedb-data und bleibt erhalten.
+docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -c "SET hba = 'host all all 0.0.0.0/0 trust'"
 
-# 4. Vorbereiten: Parsing + Drain3-Templates -> out/*.parquet
-python ingest/prepare.py data/BGL.log "data/openstack_*.log"
-#    schneller Testlauf: python ingest/prepare.py data/BGL.log --limit 200000
+# 3. Rohdaten von Zenodo entpacken: data/BGL/BGL.log, data/OpenStack/openstack_*.log
 
-# 5. In SereneDB laden + Volltextindex
+# 4. Vorbereiten: Parsing + Drain3-Templates -> out/*.parquet  (ca. 2 Minuten)
+python ingest/prepare.py data/BGL/BGL.log "data/OpenStack/openstack_*.log"
+#    schneller Testlauf: python ingest/prepare.py data/BGL/BGL.log --limit 200000
+
+# 5. In SereneDB laden + Volltextindex  (ca. 10 Sekunden, beliebig oft wiederholbar)
 python ingest/run_sql.py ingest/load.sql
 ```
 
@@ -49,8 +56,8 @@ Zuordnung Komponente → Team in [`ingest/ownership.csv`](ingest/ownership.csv),
 | HPC Control System | BGL: MMCS, BGLMASTER, CMCS |
 | HPC Hardware & Interconnect | BGL: DISCOVERY, HARDWARE, LINKCARD, SERV_NET |
 | HPC Operations | BGL: MONITOR |
-| Cloud API | OpenStack: nova.osapi_compute.wsgi.server, nova.metadata.wsgi.server, nova.api.* |
-| Cloud Compute | OpenStack: nova.compute.manager, nova.compute.claims, nova.compute.resource_tracker |
+| Cloud API | OpenStack: nova.osapi_compute.wsgi.server, nova.metadata.wsgi.server, nova.api.*, keystonemiddleware.auth_token |
+| Cloud Compute | OpenStack: nova.compute.manager, nova.compute.claims, nova.compute.resource_tracker, oslo_service.periodic_task |
 | Cloud Virtualization | OpenStack: nova.virt.libvirt.* |
 | Cloud Scheduling | OpenStack: nova.scheduler.* |
 

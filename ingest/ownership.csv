@@ -13,9 +13,11 @@ OpenStack,nova.osapi_compute.wsgi.server,Cloud API
 OpenStack,nova.metadata.wsgi.server,Cloud API
 OpenStack,nova.api.openstack.wsgi,Cloud API
 OpenStack,nova.api.openstack.compute.server_external_events,Cloud API
+OpenStack,keystonemiddleware.auth_token,Cloud API
 OpenStack,nova.compute.manager,Cloud Compute
 OpenStack,nova.compute.claims,Cloud Compute
 OpenStack,nova.compute.resource_tracker,Cloud Compute
+OpenStack,oslo_service.periodic_task,Cloud Compute
 OpenStack,nova.virt.libvirt.driver,Cloud Virtualization
 OpenStack,nova.virt.libvirt.imagecache,Cloud Virtualization
 OpenStack,nova.scheduler.host_manager,Cloud Scheduling
