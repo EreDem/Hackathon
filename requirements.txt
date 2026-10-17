@@ -4,6 +4,6 @@ drain3==0.9.11        # Python 3.13: vorher  pip install "setuptools==69.*" whee
 # Tools / Agent (OpenAI) / DB
 -r requirements-agent.txt
 # UI
-streamlit>=1.38
+streamlit>=1.66,<2
 plotly>=5
 pandas>=2
