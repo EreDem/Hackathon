@@ -3,10 +3,10 @@ services:
     image: serenedb/serenedb
     container_name: serenedb
     ports:
-      - "127.0.0.1:7890:7890"   # nur lokal erreichbar – wir nutzen eine trust-Regel ohne Passwort (siehe README)
+      - "127.0.0.1:7890:7890"   # local only; password-protected read-only app login (see README)
     volumes:
       - ./:/data                # Repo-Ordner ist im Container unter /data sichtbar (für read_parquet/read_csv)
-      - serenedb-data:/var/lib/serenedb   # Tabellen + trust-Regel überleben docker compose down
+      - serenedb-data:/var/lib/serenedb   # tables and logins survive docker compose down
     restart: unless-stopped
   # app:                  # kommt am Sonntag dazu (Streamlit)
   #   build: .

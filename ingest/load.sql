@@ -4,10 +4,11 @@
 --   docker compose up -d   (mountet den Repo-Ordner nach /data)
 -- Pfade in read_parquet/read_csv sind Pfade IM Container (Server-Seite), nicht auf eurem Rechner.
 --
--- Ausführen:  python ingest/run_sql.py ingest/load.sql   (aus dem Repo-Hauptordner)
+-- Run through the container-local administrative connection:
+-- docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -v ON_ERROR_STOP=1 -f /data/ingest/load.sql
 --
 -- Getestet mit SereneDB 26.10.1 (17.10.): ca. 10 s für 4,95 Mio. Zeilen inkl. Index, beliebig oft wiederholbar.
--- Login aus Windows klappt erst nach der einmaligen trust-Regel (siehe README, Setup 2b).
+-- Then create the password-protected read-only app login with ingest/configure_local.py.
 --   Bei Fehlern: Docs-MCP fragen oder in SQL nachschlagen:  SELECT * FROM sdb_docs.search('read_parquet');
 
 -- 1) Tabellen frisch anlegen (Skript kann beliebig oft laufen)
