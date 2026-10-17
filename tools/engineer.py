@@ -93,6 +93,7 @@ LIMIT %s
 """.strip()
 
     ergebnis = run_query(sql, params + [limit], limit=limit)
+    ergebnis["suchmodus"] = modus
 
     # Automatischer Fallback: Falls ts_phrase bei mehreren Wörtern 0 Treffer liefert, ts_all probieren
     if ergebnis["zeilen"] == 0 and modus == "phrase" and len(query.strip().split()) > 1:
@@ -107,12 +108,15 @@ ORDER BY i.ts
 LIMIT %s
 """.strip()
         ergebnis = run_query(sql, params + [limit], limit=limit)
+        ergebnis["suchmodus"] = "all"
+        ergebnis["hinweis_suche"] = "Keine Phrasentreffer; stattdessen alle Suchwörter gesucht."
 
     # Zusatz-Aggregation über alle Volltext-Treffer (liefert Gesamtzahl, Templates & Alert-Verteilung)
     try:
         stats_sql = f"""
 SELECT i.template_id, ANY_VALUE(t.template) AS template, i.dataset, i.level, i.alert, o.team,
        COUNT(*) AS treffer,
+       SUM(COUNT(*)) OVER () AS gesamt_treffer,
        COUNT(DISTINCT NULLIF(NULLIF(i.node, 'NULL'), '-')) AS knoten,
        COUNT(DISTINCT i.instance_id) AS vms,
        MIN(i.ts) AS erstmals, MAX(i.ts) AS zuletzt
@@ -125,11 +129,14 @@ ORDER BY treffer DESC
 LIMIT 10
 """.strip()
         stats = run_query(stats_sql, params, limit=10)
-        gesamt_treffer = sum(r["treffer"] for r in stats["daten"])
+        # Die Top-10-Gruppen sind nur ein Ausschnitt; die Fensterfunktion zählt ALLE.
+        gesamt_treffer = int(stats["daten"][0]["gesamt_treffer"]) if stats["daten"] else 0
         ergebnis["gesamt_treffer"] = gesamt_treffer
         ergebnis["muster_zusammenfassung"] = stats["daten"]
+        ergebnis["zusatz_belege"] = [{"zweck": "Muster und Gesamttreffer", **stats}]
+        ergebnis["truncated"] = gesamt_treffer > ergebnis["zeilen"]
     except Exception:
-        pass
+        ergebnis["hinweis"] = "Zusatzstatistik fehlgeschlagen; Gesamttrefferzahl unbekannt."
 
     return ergebnis
 
@@ -172,11 +179,7 @@ def get_context(
             anker = anker_res["daten"][0]
 
     if not anker:
-        return {
-            "sql": f"-- Kein Log-Eintrag gefunden für log_id={log_id!r}",
-            "zeilen": 0,
-            "daten": [],
-        }
+        return {**anker_res, "truncated": False}
 
     # 2a. OpenStack-Kontext: gleiche VM (instance_id) + zugehörige Requests (request_id) bzw. Traceback
     if anker["dataset"] == "OpenStack":
@@ -202,8 +205,7 @@ SELECT l.request_id,
        MIN(l.ts) AS start_ts,
        MAX(l.ts) AS end_ts,
        COUNT(DISTINCT l.service) AS anzahl_services,
-       MIN(l.service) AS erster_service,
-       MAX(l.service) AS letzter_service
+       ARRAY_AGG(DISTINCT l.service ORDER BY l.service) AS services
 FROM logs l
 WHERE l.dataset = 'OpenStack'
   AND l.request_id IN (
@@ -215,9 +217,15 @@ ORDER BY start_ts
 """.strip()
                 req_info = run_query(req_sql, [inst_id], limit=20)
                 ergebnis["requests_der_vm"] = req_info["daten"]
+                ergebnis.setdefault("zusatz_belege", []).append({"zweck": "Requests der VM", **req_info})
 
                 if req_info["daten"]:
-                    haupt_req = req_info["daten"][0]["request_id"]
+                    # Periodische Sammel-Requests können Tausende fremde VM-Zeilen
+                    # enthalten. Den ersten überschaubaren verknüpften Request bevorzugen.
+                    kandidat = next((r for r in req_info["daten"] if r["zeilen_gesamt"] <= limit), req_info["daten"][0])
+                    haupt_req = kandidat["request_id"]
+                    ergebnis["request_auswahl"] = {"request_id": haupt_req,
+                        "regel": "Erster verknüpfter Request innerhalb des Zeilenlimits; sonst erster verknüpfter Request."}
                     req_zeilen = run_query(
                         """
 SELECT l.id, l.ts, l.level, l.component, l.service, l.request_id, l.instance_id, l.template_id, l.message
@@ -230,8 +238,9 @@ LIMIT %s
                         limit=limit,
                     )
                     ergebnis["request_verlauf"] = req_zeilen["daten"]
+                    ergebnis["zusatz_belege"].append({"zweck": "Request-Verlauf", **req_zeilen})
             except Exception:
-                pass
+                ergebnis["hinweis"] = "Zusätzlicher Request-Kontext konnte nicht vollständig geladen werden."
 
             return ergebnis
 
@@ -289,8 +298,9 @@ GROUP BY s.template_id
         ausbruch = run_query(ausbruch_sql, [anker["id"], fenster_sek, fenster_sek], limit=1)
         if ausbruch["daten"]:
             ergebnis["ausbruch_analyse"] = ausbruch["daten"][0]
+            ergebnis.setdefault("zusatz_belege", []).append({"zweck": "Ausbruch im Zeitfenster", **ausbruch})
     except Exception:
-        pass
+        ergebnis["hinweis"] = "Zusätzliche Ausbruchstatistik konnte nicht geladen werden."
 
     return ergebnis
 

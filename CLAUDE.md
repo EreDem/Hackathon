@@ -116,7 +116,7 @@ Prioritäts-Score (transparent, Faktoren in UI zeigen):
 ## Schnellstart für alle (ca. 15 Minuten)
 
 1. `git pull`, dann in PowerShell: `python -m venv .venv` → `.venv\Scripts\Activate.ps1` → `pip install -r requirements.txt`.
-2. `.env.example` nach `.env` kopieren (Person 4 trägt `ANTHROPIC_API_KEY` ein).
+2. `.env.example` nach `.env` kopieren (Person 4 trägt `OPENAI_API_KEY` ein).
 3. `docker compose up -d`, danach **einmalig** die trust-Regel (siehe SereneDB → Login).
    Wer SereneDB vorher von Hand gestartet hat: zuerst `docker rm -f serenedb`.
 4. **Parquet-Dateien erzeugen.** Sie liegen nicht im Repo (`out/` steht in `.gitignore`), jeder erzeugt sie selbst:
@@ -232,45 +232,29 @@ Prioritäts-Score (transparent, Faktoren in UI zeigen):
 
 ### Person 4 – Agent → `agent/agent.py`
 
-1. Bis die Tools von 2/3 fertig sind: Stub-Funktionen mit derselben Signatur, die `db.query(...)` mit den SQL-Bausteinen oben aufrufen.
-2. Claude über das `anthropic`-SDK (1.15 im `.venv`) mit dem **Tool Runner**, Modell `claude-opus-5-5`, Key aus `.env`:
-   ```python
-   import json
-   import anthropic
-   from anthropic import beta_tool
-   from dotenv import load_dotenv
-
-   load_dotenv()
-   client = anthropic.Anthropic()
-   belege = []   # jedes Tool-Ergebnis inkl. SQL – das UI zeigt diese Liste, nicht den LLM-Text
-
-   @beta_tool
-   def top_patterns(team: str, limit: int = 10) -> str:
-       """Häufigste Fehlermuster (Templates) eines Teams mit Anzahl, Alerts und Reichweite.
-
-       Args:
-           team: Teamname aus der Ownership-Tabelle, z. B. "HPC Kernel".
-           limit: Anzahl der Muster.
-       """
-       ergebnis = analytics.top_patterns(team=team, limit=limit)
-       belege.append({"tool": "top_patterns", **ergebnis})
-       return json.dumps(ergebnis, default=str)
-
-   runner = client.beta.messages.tool_runner(
-       model="claude-opus-5-5", max_tokens=16000,
-       system=SYSTEM_PROMPTS[rolle], tools=[search_logs, get_context, top_patterns],  # usw.
-       messages=verlauf + [{"role": "user", "content": frage}],
-       output_config={"effort": "medium"},
-       betas=["server-side-fallback-2026-07-01"], fallbacks="default",  # bei einer Ablehnung übernimmt automatisch ein anderes Modell
-   )
-   for nachricht in runner:   # eine Nachricht pro Runde; die letzte enthält die Antwort (Blöcke mit type == "text")
-       letzte = nachricht
-   ```
-   Bei Opus 5.5 lässt sich Thinking nicht abschalten (einfach weglassen). `tool_choice` mit `any`/`tool` gibt Fehler 400,
-   die Tool-Nutzung also über den Prompt steuern. Vor dem Lesen der Antwort `stop_reason == "refusal"` prüfen.
-3. Drei System-Prompts (Engineer / Team Lead / Manager) mit gemeinsamem Kern: „Nenne nur Zahlen aus Tool-Ergebnissen, zitiere Log-IDs
-   bzw. Template-IDs, antworte auf Deutsch im Aufbau Frage → Belege → Empfehlung. Wenn die Daten etwas nicht hergeben, sag das.“
-4. Schnittstelle zu Person 5 (bitte so beibehalten): `antworte(rolle: str, team: str | None, frage: str, verlauf: list) -> {"text": str, "belege": list}`.
+1. Entscheidung von Kardo (17.10.): OpenAI statt Anthropic. Das offizielle
+   `openai`-Python-SDK und die Responses API verwenden. Kein Claude-Modellname
+   und keine Anthropic-Tool-Runner-Parameter in OpenAI-Aufrufen.
+2. Abhaengigkeiten: `requirements-agent.txt`. API-Key aus `OPENAI_API_KEY` in
+   der lokalen `.env`; Modell ueber `OPENAI_MODEL` nach Pruefung des Zugangs.
+   Keine Schluessel ausgeben oder committen. Die Einrichtung allein ruft keine API auf.
+3. Der Agent waehlt die Werkzeuge von Person 2/3 selbst aus. Rueckgaben und
+   tatsaechlich ausgefuehrte SQL pro Anfrage separat als Belege sammeln.
+   Keine global geteilte Belegliste. Fehlende Tools deutlich melden;
+   Testdaten niemals als echte Datenbankergebnisse praesentieren.
+4. Drei Rollen-Prompts (Engineer / Team Lead / Manager). Nur Zahlen aus
+   Tool-Ergebnissen nennen, Log-/Template-IDs zitieren und Beobachtungen,
+   Hypothesen und naechste Schritte trennen. Datenumfang, Zeitfilter und
+   abgeschnittene Ergebnisse offenlegen; historische Zeitraeume verwenden.
+5. Schnittstelle zu Person 5 beibehalten:
+   `antworte(rolle: str, team: str | None, frage: str, verlauf: list)`
+   liefert `{"text": str, "belege": list}`.
+6. Aktueller lokaler Stand: Agent-Grundgeruest unter Python 3.13 implementiert,
+   lokale Tests und kleiner OpenAI-Verbindungstest erfolgreich. Alle sechs DB-Tools
+   aus dem Team-Update sind angeschlossen. Einstieg und Schnittstellen: `agent/README.md`. Testmodell:
+   `gpt-6.1-sol`. Erens bekannte Faelle sind durch echte SQL-Abfragen
+   bestaetigt; 40 Tests bestehen. UI-Anbindung mit Omar steht noch aus. Lokales Testbudget: 5 USD; Kostenprotokoll
+   `.agent-usage.sqlite3` nicht loeschen.
 
 ### Person 5 – UI, Demo & Pitch → `app.py`
 

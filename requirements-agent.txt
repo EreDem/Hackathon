@@ -1,0 +1,5 @@
+# Agent und Datenbankzugriff; ohne Datenimport und Benutzeroberflaeche.
+openai>=2,<3
+python-dotenv>=1,<2
+pydantic>=2,<3
+psycopg[binary]>=3.2,<4

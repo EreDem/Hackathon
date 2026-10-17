@@ -4,6 +4,31 @@ Prototyp, der Log-Daten (BGL + OpenStack) in Antworten für drei Rollen verwande
 **Engineer** (Ursache eines Fehlers), **Team Lead** (wiederkehrende Probleme im Team), **Manager** (Priorisierung).
 Ablauf: **Frage → Belege (SereneDB) → Empfehlung (KI-Agent)**. Leitprinzip: SQL rechnet, das LLM erklärt.
 
+## Agent-Entwicklung mit OpenAI (Kardo, Person 4)
+
+Das Agent-Grundgeruest verwendet das offizielle OpenAI-Python-SDK und die Responses API.
+Die Schnittstelle zu Omar bleibt `antworte(rolle, team, frage, verlauf)` mit
+`{"text": str, "belege": list}`; zusaetzlich liefert `meta` Status und Verbrauch.
+Die drei Rollen und alle sechs DB-Werkzeuge von Person 2/3 sind angeschlossen.
+Fuer echte Analysen muss die lokale SereneDB laufen und mit beiden Datensaetzen geladen sein.
+Start, Tests und Schnittstellen: [agent/README.md](agent/README.md).
+
+Fuer die Agent-Entwicklung unter Windows mit vorhandenem Python 3.13:
+
+```powershell
+py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-agent.txt
+# Nur wenn .env noch nicht existiert:
+Copy-Item .env.example .env
+```
+
+In `.env` den eigenen `OPENAI_API_KEY` lokal eintragen. Fuer die ersten Tests ist
+`OPENAI_MODEL=gpt-6.1-sol` eingestellt. Schluessel nie ins Repository
+oder in Chatnachrichten kopieren. Die Installation allein macht keine API-Aufrufe.
+Diese kleine Installation umfasst nur Agent/DB-Pakete. Fuer Datenimport und UI
+gelten weiterhin die vollstaendigen Abhaengigkeiten unten; besonders den
+Drain3-Hinweis fuer Python 3.13 in `requirements.txt` beachten.
+
 ## Setup
 
 ```powershell
