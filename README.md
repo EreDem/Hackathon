@@ -77,7 +77,7 @@ out/      Ausgabe von prepare.py (nicht im Repo)
 | # | Bereich | Person |
 |---|---|---|
 | 1 | Daten & Laden | Eren |
-| 2 | Suche (Engineer) | |
-| 3 | Analytics (Team Lead & Manager) | |
-| 4 | Agent | |
-| 5 | UI, Demo & Pitch | |
+| 2 | Suche (Engineer) | Kirdar|
+| 3 | Analytics (Team Lead & Manager) | Ghazal |
+| 4 | Agent | Kardo |
+| 5 | UI, Demo & Pitch | Omar |
