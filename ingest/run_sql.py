@@ -9,7 +9,7 @@ import time
 
 import psycopg
 
-DSN = "host=localhost port=7890 dbname=postgres user=postgres"
+DSN = "host=127.0.0.1 port=7890 dbname=postgres user=postgres"
 
 
 def statements(sql: str):
