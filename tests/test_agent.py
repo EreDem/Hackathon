@@ -190,6 +190,37 @@ class AgentTests(unittest.TestCase):
             self.assertFalse(schema["parameters"]["additionalProperties"])
             self.assertEqual(set(schema["parameters"]["required"]), set(schema["parameters"]["properties"]))
 
+    def test_english_ui_instructions_override_default_language(self):
+        agent, client = self.make([response(tool_call()), response()])
+        result = agent.antworte('Engineer', None, 'Investigate this error', [], language='en')
+        self.assertEqual(result['meta']['status'], 'ok')
+        self.assertIn('Answer in English.', client.requests[0]['instructions'])
+        self.assertNotIn('Antworte auf Deutsch.', client.requests[0]['instructions'])
+
+    def test_ui_scope_is_enforced_even_when_model_requests_other_data(self):
+        calls = []
+        agent, _ = self.make([], {'search_logs': lambda **kw: calls.append(kw) or fixture()})
+        scope = dict(dataset='BGL', team='HPC Kernel', von='2005-06-03', bis='2005-06-04')
+        evidence = []
+        result = agent._execute('search_logs', json.dumps({'query': 'error', 'dataset': 'OpenStack', 'team': 'Cloud Compute'}), evidence, None, scope)
+        self.assertNotIn('fehler', result)
+        self.assertEqual({key: calls[0][key] for key in scope}, scope)
+        self.assertEqual(evidence[0]['parameter']['dataset'], 'BGL')
+
+    def test_context_scope_exception_is_explicit(self):
+        agent, _ = self.make([], {'get_context': fixture})
+        result = agent._execute('get_context', '{"log_id":1}', [], None, {'dataset': 'BGL'})
+        self.assertIn('scope_exception', result)
+
+    def test_unset_dashboard_team_allows_a_more_focused_question(self):
+        calls = []
+        agent, _ = self.make([], {'top_patterns': lambda **kw: calls.append(kw) or fixture()})
+        result = agent._execute('top_patterns', '{"team":"HPC Kernel"}', [], None,
+                                {'dataset': 'BGL', 'team': None})
+        self.assertNotIn('fehler', result)
+        self.assertEqual(calls[0]['team'], 'HPC Kernel')
+        self.assertEqual(calls[0]['dataset'], 'BGL')
+
 
 if __name__ == "__main__":
     unittest.main()

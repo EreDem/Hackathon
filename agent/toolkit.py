@@ -97,7 +97,7 @@ class Tool:
 
 TOOLS = (
     Tool("search_logs", "tools.engineer", SearchArgs,
-         "Volltextsuche mit optionalen Filtern. Liefert begrenzte Logtreffer mit IDs und ausgeführter SQL, keine Gesamthäufigkeit."),
+         "Volltextsuche mit optionalen Filtern. Liefert begrenzte Logtreffer mit IDs, ausgeführte SQL und bei erfolgreicher Zusatzstatistik gesamt_treffer über alle passenden Logzeilen; keine Incident-Zahl."),
     Tool("get_context", "tools.engineer", ContextArgs,
          "Kontext zu einer zuvor gefundenen Log-ID: benachbarte Ereignisse, Request/VM oder BGL-Knoten/Midplane. Liefert Logzeilen und SQL."),
     Tool("vm_dauer", "tools.engineer", VMArgs,

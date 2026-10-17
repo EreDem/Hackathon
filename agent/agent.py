@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from agent.budget import Budget, BudgetLimit, MODELL
 from agent.prompts import GEMEINSAM, ROLLEN, rollenname
-from agent.toolkit import BY_NAME, lade_werkzeuge
+from agent.toolkit import BY_NAME, Filter, lade_werkzeuge
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_REQUESTS = 4
@@ -32,7 +32,8 @@ class Agent:
         self.handlers = {name: fn for name, fn in handlers.items() if name in BY_NAME}
         self.testdaten = testdaten
 
-    def antworte(self, rolle: str, team: str | None, frage: str, verlauf: list) -> dict:
+    def antworte(self, rolle: str, team: str | None, frage: str, verlauf: list,
+                 *, language: str = 'de', scope: dict | None = None) -> dict:
         belege, tool_errors = [], []
         meta = {"modell": self.model, "api_aufrufe": 0, "tool_aufrufe": 0,
                 "input_tokens": 0, "output_tokens": 0, "kosten_usd_geschaetzt": 0.0,
@@ -46,6 +47,9 @@ class Agent:
 
         try:
             role = rollenname(rolle)
+            if language not in ('de', 'en'):
+                raise ValueError('language must be de or en.')
+            scope = Filter.model_validate(scope).model_dump() if scope is not None else None
             if not isinstance(frage, str) or not frage.strip() or len(frage) > 4000:
                 raise ValueError("Bitte eine Frage mit höchstens 4000 Zeichen eingeben.")
             if team is not None and (not isinstance(team, str) or not 1 <= len(team) <= 120):
@@ -67,6 +71,12 @@ class Agent:
                           "Es wurde keine KI-Anfrage ausgeführt.", "tools_fehlen")
 
         instructions = GEMEINSAM + "\n" + ROLLEN[role]
+        if language == 'en':
+            instructions = instructions.replace('Antworte auf Deutsch.', 'Answer in English.')
+            instructions += '\nAnswer entirely in English, including headings: Question, Evidence, Possible explanation, Next check.'
+        if scope is not None:
+            instructions += '\nActive dashboard filters, enforced on filterable tools: ' + encode(scope)
+            instructions += '\nget_context and vm_dauer may extend outside this scope. Explicitly disclose those exceptions.'
         instructions += "\nAusgewähltes Team (Daten): " + encode(team)
         instructions += "\nNicht verfügbare Werkzeuge: " + encode(meta["fehlende_tools"])
         if self.testdaten:
@@ -130,7 +140,7 @@ class Agent:
                     return finish("Die Werkzeuggrenze wurde erreicht. Bitte die Frage eingrenzen. "
                                   "Vorhandene Belege bleiben erhalten.", "toollimit")
                 meta["tool_aufrufe"] += 1
-                result = self._execute(call.name, call.arguments, belege, team)
+                result = self._execute(call.name, call.arguments, belege, team, scope)
                 if "fehler" in result:
                     tool_errors.append({"tool": call.name, "fehler": result["fehler"]})
                 messages.append({"type": "function_call_output", "call_id": call.call_id,
@@ -139,7 +149,8 @@ class Agent:
         return finish("Die Grenze von vier Modellaufrufen wurde erreicht. "
                       "Es gibt noch keine abgeschlossene Antwort; vorhandene Belege bleiben erhalten.", "aufruflimit")
 
-    def _execute(self, name: str, arguments: str, belege: list, team: str | None) -> dict:
+    def _execute(self, name: str, arguments: str, belege: list, team: str | None,
+                 scope: dict | None = None) -> dict:
         if name not in self.handlers:
             return {"fehler": "Dieses Werkzeug ist nicht verfügbar."}
         try:
@@ -147,6 +158,9 @@ class Agent:
             values = args.model_dump()
             if "team" in values and values["team"] is None and team:
                 values["team"] = team
+            if scope is not None:
+                values.update({key: value for key, value in scope.items() if key in values and value is not None})
+                values = BY_NAME[name].args.model_validate(values).model_dump()
             raw = self.handlers[name](**values)
             if (not isinstance(raw, dict) or not isinstance(raw.get("sql"), str) or not raw["sql"].strip()
                     or not isinstance(raw.get("daten"), list)
@@ -160,6 +174,9 @@ class Agent:
             evidence = json.loads(serialized)
             evidence.update({"tool": name, "parameter": values, "beleg_id": f"B{len(belege) + 1}",
                              "testdaten": self.testdaten})
+            if scope is not None and name in ('get_context', 'vm_dauer'):
+                evidence['scope_exception'] = ('Context follows the selected event beyond dashboard filters.'
+                    if name == 'get_context' else 'Spawn comparison uses the full OpenStack corpus.')
             if name == "top_patterns":
                 evidence["zaehlebene"] = "Jede Zeile zählt ein einzelnes Template. Bei OpenStack nicht mit der vollständigen Problemgruppe verwechseln; dafür priority_ranking verwenden."
             elif name == "priority_ranking":
@@ -192,7 +209,7 @@ class Agent:
                     return [compact(item) for item in value]
                 return value
             visible = compact(visible)
-            if "zusatz_belege" in visible:
+            if "zusatz_belege" in visible or "belege" in visible:
                 for alias in ("muster_zusammenfassung", "requests_der_vm", "request_verlauf", "ausbruch_analyse"):
                     visible.pop(alias, None)
             tables = []
@@ -230,17 +247,28 @@ class Agent:
             return {"fehler": "Werkzeug fehlgeschlagen. Datenbankverbindung und Implementierung prüfen; keine Trefferzahl ableitbar."}
 
 
-def antworte(rolle: str, team: str | None, frage: str, verlauf: list) -> dict:
+def configuration_status() -> dict:
+    """Readiness for the UI; no API call, key disclosure or usage-ledger mutation."""
+    cfg = dotenv_values(ROOT / '.env')
+    handlers, missing = lade_werkzeuge()
+    return {'configured': bool(os.getenv('OPENAI_API_KEY') or cfg.get('OPENAI_API_KEY')) and bool(handlers),
+            'key_configured': bool(os.getenv('OPENAI_API_KEY') or cfg.get('OPENAI_API_KEY')),
+            'model': os.getenv('OPENAI_MODEL') or cfg.get('OPENAI_MODEL') or MODELL,
+            'missing_tools': missing}
+
+
+def antworte(rolle: str, team: str | None, frage: str, verlauf: list,
+             *, language: str = 'de', scope: dict | None = None) -> dict:
     """UI-Einstieg. text/belege sind stabil; meta enthält Status und Verbrauch."""
     handlers, _ = lade_werkzeuge()
     cfg = dotenv_values(ROOT / ".env")
     key = os.getenv("OPENAI_API_KEY") or cfg.get("OPENAI_API_KEY")
     model = os.getenv("OPENAI_MODEL") or cfg.get("OPENAI_MODEL") or MODELL
-    budget = Budget(ROOT / ".agent-usage.sqlite3")
-    if not handlers:
-        return Agent(None, handlers, budget, model).antworte(rolle, team, frage, verlauf)
     if not key:
         return {"text": "OPENAI_API_KEY fehlt in der lokalen .env.", "belege": [],
                 "meta": {"status": "konfiguration_fehlt", "api_aufrufe": 0}}
+    budget = Budget(ROOT / ".agent-usage.sqlite3")
+    if not handlers:
+        return Agent(None, handlers, budget, model).antworte(rolle, team, frage, verlauf, language=language, scope=scope)
     with OpenAI(api_key=key, timeout=30, max_retries=0) as client:
-        return Agent(client, handlers, budget, model).antworte(rolle, team, frage, verlauf)
+        return Agent(client, handlers, budget, model).antworte(rolle, team, frage, verlauf, language=language, scope=scope)

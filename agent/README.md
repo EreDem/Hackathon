@@ -47,6 +47,25 @@ Zusätzliche Abfragen ebenfalls anzeigen: `meta.bereich` bei Analytics und
 `zusatz_belege` bei Engineer. Darin stehen jeweils eigene SQL und Daten.
 Das Modell sieht kompakte Belege ohne lange SQL-Texte; im UI bleiben alle SQL erhalten.
 
+### Integrierte englische UI
+
+`app.py` verwendet jetzt denselben Agenten mit zwei optionalen Keyword-Argumenten:
+`antworte(rolle, team, frage, verlauf, language="en", scope={...})`.
+Ohne diese Argumente bleibt die deutsche CLI unverändert. `scope` enthält
+`dataset`, `team`, `von`, `bis` als Strings oder `None`. Gesetzte Scope-Filter
+werden serverseitig bei filterbaren Werkzeugen durchgesetzt; `None` lässt eine
+engere Werkzeugauswahl zu. VM-/Request-Kontext und Spawn-Vergleiche können den
+Dashboard-Bereich überschreiten und erhalten einen sichtbaren Scope-Hinweis.
+
+Die UI zeigt Beleg-IDs, Werkzeugparameter, DB- und Modellkürzungen, API-/Tool-Aufrufe,
+Tokenverbrauch und geschätzte Kosten. Status ungleich `ok` wird als fehlgeschlagene
+oder unvollständige Untersuchung behandelt; vorhandene Belege bleiben zugänglich.
+Fehlertexte werden nicht als erfolgreiche Chatantwort gespeichert.
+
+Engineer-Zusatzabfragen stehen im vereinheitlichten Feld `belege`; die UI kann
+auch ältere Rückgaben mit `zusatz_belege` lesen. `configuration_status()` prüft
+die lokale Konfiguration ohne API-Anfrage, Schlüsselanzeige oder Kostenbuchung.
+
 ## Übergabe an Kirdar und Ghazal
 
 Die Anschlüsse in `agent/toolkit.py` erwarten folgende Funktionen:
