@@ -172,7 +172,7 @@ def top_patterns(team: str | None, dataset: str | None = None,
         FROM marked m LEFT JOIN templates t
           ON t.dataset = m.dataset AND t.template_id = m.template_id
         GROUP BY m.dataset, m.team, m.template_id
-    ) SELECT *, COUNT(*) OVER () AS _gesamt FROM grouped
+    ) SELECT *, SUM(n) OVER () AS logzeilen_passend_gesamt, COUNT(*) OVER () AS _gesamt FROM grouped
     ORDER BY n DESC, dataset, team, template_id
     """
     return _run(base, params, sql, [], limit,

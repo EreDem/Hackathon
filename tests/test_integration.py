@@ -38,7 +38,7 @@ class IntegrationTests(unittest.TestCase):
             result = engineer.search_logs("error", limit=1)
         self.assertEqual(result["gesamt_treffer"], 70)
         self.assertTrue(result["truncated"])
-        self.assertIn("GROUP BY", result["zusatz_belege"][0]["sql"])
+        self.assertIn("GROUP BY", result["belege"][0]["sql"])
 
     def test_empty_context_keeps_executed_sql(self):
         result = {"sql": "SELECT * FROM logs WHERE id = 42", "zeilen": 0, "daten": []}
