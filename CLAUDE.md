@@ -76,11 +76,15 @@ Prioritäts-Score (transparent, Faktoren in UI zeigen):
 
 - Docker: `docker compose up -d` (Image `serenedb/serenedb`, läuft als SereneDB 26.10.1, Port **7890** nur auf 127.0.0.1,
   Volume `serenedb-data`). Repo-Ordner ist im Container unter **`/data`** gemountet. Pfade in `read_parquet`/`read_csv` sind **Container-Pfade**.
-- **Login**: `postgres` hat kein Passwort und ist laut Doku nur über Loopback **im** Container vertraut. Verbindungen aus Windows
-  kommen über das Docker-Netz → `password authentication failed`. Team-Entscheidung: ohne Passwort, dafür **einmalig** nach dem ersten Start:
-  `docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -c "SET hba = 'host all all 0.0.0.0/0 trust'"` (liegt im Volume).
-- Verbindung: `psycopg.connect("host=127.0.0.1 port=7890 dbname=postgres user=postgres", cursor_factory=psycopg.ClientCursor)`.
+- **Login (seit 18.10., wie README → Setup 3): keine trust-Regel mehr.** `postgres` ist nur über Loopback **im** Container
+  vertraut, deshalb laufen Laden und Verwaltung per `docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres …`.
+  Danach legt `python ingest/configure_local.py` den passwortgeschützten Lesezugang `log_observatory` an (nur SELECT auf
+  `logs`, `templates`, `ownership`) und schreibt dessen DSN als `DB_DSN` in die ignorierte `.env`. Das Passwort wird nie ausgegeben.
+  Fehlt dieser Schritt, scheitern App und Tools mit `password authentication failed`.
+- Verbindung: `tools/db.py` liest `DB_DSN` aus der `.env` und verbindet mit `127.0.0.1` und `cursor_factory=psycopg.ClientCursor`.
   **Nicht `localhost`** und **immer `ClientCursor`**, Gründe unter „Gemeinsame Regeln für alle Tools“.
+- `load.sql` legt die Tabellen neu an. Nach einem erneuten Laden deshalb die Leserechte wiederherstellen:
+  `docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -v ON_ERROR_STOP=1 -c "GRANT SELECT ON logs TO log_observatory; GRANT SELECT ON templates TO log_observatory; GRANT SELECT ON ownership TO log_observatory;"`
 - Keine verschachtelten Transaktionen, keine Named Cursors (`DECLARE CURSOR`). Für große Ergebnisse `cur.stream(...)`.
 - Volltext (**getestet**, Index vollständig: Treffer = Template-Zählung bzw. `LIKE`-Zählung):
   ```sql
@@ -117,8 +121,8 @@ Prioritäts-Score (transparent, Faktoren in UI zeigen):
 
 1. `git pull`, dann in PowerShell: `python -m venv .venv` → `.venv\Scripts\Activate.ps1` → `pip install -r requirements.txt`.
 2. `.env.example` nach `.env` kopieren (Person 4 trägt `OPENAI_API_KEY` ein).
-3. `docker compose up -d`, danach **einmalig** die trust-Regel (siehe SereneDB → Login).
-   Wer SereneDB vorher von Hand gestartet hat: zuerst `docker rm -f serenedb`.
+3. `docker compose up -d`. Wer SereneDB vorher von Hand gestartet hat: zuerst `docker rm -f serenedb`.
+   Keine trust-Regel setzen, der Zugang entsteht in Schritt 5 (siehe SereneDB → Login).
 4. **Parquet-Dateien erzeugen.** Sie liegen nicht im Repo (`out/` steht in `.gitignore`), jeder erzeugt sie selbst:
    - Zenodo-Daten (Links im Brief) so entpacken, dass es diese Dateien gibt: `data/BGL/BGL.log` (743 MB) sowie
      `data/OpenStack/openstack_abnormal.log`, `openstack_normal1.log`, `openstack_normal2.log` und `anomaly_labels.txt`.
@@ -130,8 +134,10 @@ Prioritäts-Score (transparent, Faktoren in UI zeigen):
      OpenStack 207.820 und 71, jeweils `nicht erkannt: 0 (0.00%)`.
    - Optionaler Testlauf vorab: `python ingest/prepare.py data/BGL/BGL.log --limit 200000` (ca. 10 s). Er überschreibt `out/`,
      danach also unbedingt den vollen Lauf machen.
-5. `python ingest/run_sql.py ingest/load.sql` (~10 s). Erwartet: `OpenStack | 207820 | 71` und `BGL | 4747963 | 399`,
-   „Komponenten ohne Team“ ist leer, die Volltextsuche zeigt 10× `data TLB error interrupt`.
+5. Laden und Lesezugang anlegen (wie README → Setup 3):
+   `docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -v ON_ERROR_STOP=1 -f /data/ingest/load.sql` (~10 s),
+   danach `python ingest/configure_local.py`. Erwartet in der Ausgabe von `load.sql`: OpenStack 207820 Zeilen und 71 Templates,
+   BGL 4747963 und 399, „Komponenten ohne Team“ ist leer, die Volltextsuche zeigt 10× `data TLB error interrupt`.
 
 ## Gemeinsame Regeln für alle Tools (Person 2–5)
 
@@ -141,23 +147,8 @@ Prioritäts-Score (transparent, Faktoren in UI zeigen):
 - Listen als Parameter: `level = ANY(%s)` mit Python-Liste. Ein `%` in `LIKE` als `%%` schreiben.
 - **Rückgabe jedes Tools:** `{"sql": <tatsächlich ausgeführte SQL>, "zeilen": n, "daten": [dict, …]}`. Belege-Panel und Agent nutzen genau das.
   Für das LLM mit `json.dumps(ergebnis, default=str)` serialisieren (Zeitstempel).
-- Gemeinsamer Helfer `tools/db.py` (getestet). Person 2 legt ihn als Erstes an, alle importieren ihn:
-  ```python
-  import os
-  import psycopg
-  from psycopg.rows import dict_row
-
-  DSN = os.getenv("DB_DSN", "host=127.0.0.1 port=7890 dbname=postgres user=postgres")
-
-  def query(sql: str, params: list | None = None, limit: int = 200) -> dict:
-      """Führt eine Abfrage aus und gibt Daten + die tatsächlich ausgeführte SQL zurück (für das Belege-Panel)."""
-      with psycopg.connect(DSN, autocommit=True, cursor_factory=psycopg.ClientCursor) as conn:
-          with conn.cursor(row_factory=dict_row) as cur:
-              ausgefuehrt = cur.mogrify(sql, params)
-              cur.execute(sql, params)
-              rows = cur.fetchmany(limit)
-      return {"sql": ausgefuehrt, "zeilen": len(rows), "daten": rows}
-  ```
+- Gemeinsamer Helfer `tools/db.py` (umgesetzt, alle importieren ihn): lädt die `.env`, nutzt `DB_DSN`, `127.0.0.1`,
+  `ClientCursor` und `connect_timeout=5` und gibt `{"sql", "zeilen", "daten"}` zurück.
 - **Die Daten sind historisch, nie `now()` verwenden.** BGL: 03.06.2005 – 04.01.2006. OpenStack: 14.05.2017 19:39 – 17.05.2017 12:02
   in drei Blöcken: 14.05. 19:39–21:56 (abnormal), 16.05. 00:00–06:25 (normal1), 16.05. 15:15 – 17.05. 12:02 (normal2).
   „Letzte 7 Tage“ heißt relativ zu `MAX(ts)` des Datensatzes. Trend-Intervall: BGL Tag/Woche, OpenStack Stunde.

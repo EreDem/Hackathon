@@ -99,7 +99,8 @@ TOOLS = (
     Tool("search_logs", "tools.engineer", SearchArgs,
          "Volltextsuche mit optionalen Filtern. Liefert begrenzte Logtreffer mit IDs, ausgeführte SQL und bei erfolgreicher Zusatzstatistik gesamt_treffer über alle passenden Logzeilen; keine Incident-Zahl."),
     Tool("get_context", "tools.engineer", ContextArgs,
-         "Kontext zu einer zuvor gefundenen Log-ID: benachbarte Ereignisse, Request/VM oder BGL-Knoten/Midplane. Liefert Logzeilen und SQL."),
+         "Kontext zu einer zuvor gefundenen Log-ID: benachbarte Ereignisse, Request/VM oder BGL-Knoten/Midplane. "
+         "Bei OpenStack inklusive aller Zeilen desselben Ereignisses (pid, ts), z. B. eines mehrzeiligen Tracebacks. Liefert Logzeilen und SQL."),
     Tool("vm_dauer", "tools.engineer", VMArgs,
          "Spawn-Dauer einer OpenStack-VM und Vergleichswerte aus SQL; auch INFO-Logs können auffällig sein."),
     Tool("top_patterns", "tools.analytics", PatternsArgs,

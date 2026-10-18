@@ -1,3 +1,4 @@
+import os
 import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
@@ -71,6 +72,18 @@ class EngineerTests(unittest.TestCase):
         self.assertTrue(result["belege"][2]["meta"]["gekuerzt"])
         self.assertEqual(result["request_verlauf"], [{"id": 1}])
 
+    def test_request_context_includes_same_event_lines(self):
+        ts = datetime(2017, 5, 16, tzinfo=timezone.utc)
+        anchor = {"id": 5, "dataset": "OpenStack", "pid": 2931, "ts": ts, "request_id": "req-a", "instance_id": None}
+        traceback_line = {"id": 6, "dataset": "OpenStack", "pid": 2931, "ts": ts, "request_id": None}
+        with patch.object(e, "run_query", side_effect=[response([anchor]), response([anchor, traceback_line])]) as query:
+            result = e.get_context(5)
+        sql = query.call_args_list[1].args[0]
+        self.assertIn("l.request_id=s.request_id OR (l.pid=s.pid AND l.ts=s.ts)", sql)
+        self.assertIn("WHEN l.dataset='OpenStack' AND (l.pid=s.pid AND l.ts=s.ts) THEN 1", sql)
+        self.assertIn("same event", result["meta"]["scope"])
+        self.assertEqual(result["meta"]["ereignis"]["zeilen_im_ergebnis"], 2)
+
     def test_no_anchor_keeps_actual_lookup_sql(self):
         with patch.object(e, "run_query", return_value=response([], "lookup SQL")):
             result = e.get_context(404)
@@ -85,6 +98,21 @@ class EngineerTests(unittest.TestCase):
         self.assertIn("MIN(auswahl)", query.call_args.args[0])
         self.assertEqual(query.call_args.args[1], [1, "selected", 3])
         self.assertTrue(result['meta']['gekuerzt'])
+
+
+@unittest.skipUnless(os.getenv("ANALYTICS_TEST_DB"), "Requires local SereneDB")
+class LiveTracebackContextTests(unittest.TestCase):
+    def test_cache_manager_traceback_includes_cause(self):
+        # Real case from the product review: the cause sits in traceback lines without request ID.
+        header = e.run_query("""SELECT id FROM logs WHERE dataset='OpenStack'
+            AND message LIKE %s ORDER BY ts, id LIMIT 1""",
+            ["Error during ComputeManager._run_image_cache_manager_pass%"], limit=1)["daten"][0]
+        result = e.get_context(header["id"], fenster_sek=60, limit=100)
+        event = [r for r in result["daten"] if r["pid"] == result["meta"]["anchor"]["pid"]
+                 and r["ts"] == result["meta"]["anchor"]["ts"]]
+        self.assertEqual(result["meta"]["ereignis"]["zeilen_im_ergebnis"], 24)
+        self.assertEqual(sum(r["request_id"] is None for r in event), 23)
+        self.assertTrue(any(r["message"].startswith("InvalidDiskInfo") for r in event))
 
 
 if __name__ == "__main__":

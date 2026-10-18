@@ -121,12 +121,18 @@ def search_logs(query: str, dataset: str | None = None, level: str | list[str] |
     return result
 
 
+# Lines of one OpenStack event (e.g. a traceback) share process and timestamp with the anchor.
+SAME_EVENT = "(l.pid=s.pid AND l.ts=s.ts)"
+
+
 def get_context(log_id: int | str, fenster_sek: int = 600, limit: int = 100) -> dict:
     """Get nearby logs for a numeric ID, VM UUID or req-UUID, with executed evidence.
 
     BGL uses the broader midplane; unlinked OpenStack errors use their component.
     Window: 1..86400 seconds. VM/request context spans all recorded times.
-    limit: 1..1000; retain the anchor and nearest rows, then display chronologically.
+    OpenStack context also includes every line sharing the anchor's (pid, ts): a multi-line
+    traceback, whose follow-up lines usually lack the request ID.
+    limit: 1..1000; retain the anchor, its event lines and nearest rows, then display chronologically.
     """
     _validate(limit)
     if isinstance(fenster_sek, bool) or not isinstance(fenster_sek, int) or not 1 <= fenster_sek <= 86400:
@@ -153,22 +159,29 @@ def get_context(log_id: int | str, fenster_sek: int = 600, limit: int = 100) -> 
             AND l.ts BETWEEN s.ts - %s * INTERVAL '1 second' AND s.ts + %s * INTERVAL '1 second'))"""
         params += [fenster_sek, fenster_sek]
     elif anchor.get('instance_id'):
-        scope, predicate = 'OpenStack VM lifecycle (all recorded times)', "l.dataset='OpenStack' AND l.instance_id=s.instance_id"
+        scope = 'OpenStack VM lifecycle (all recorded times) plus lines of the same event (pid, ts)'
+        predicate = f"l.dataset='OpenStack' AND (l.instance_id=s.instance_id OR {SAME_EVENT})"
     elif anchor.get('request_id'):
-        scope, predicate = 'OpenStack request lifecycle (all recorded times)', "l.dataset='OpenStack' AND l.request_id=s.request_id"
+        scope = 'OpenStack request lifecycle (all recorded times) plus lines of the same event (pid, ts)'
+        predicate = f"l.dataset='OpenStack' AND (l.request_id=s.request_id OR {SAME_EVENT})"
     else:
-        scope = 'OpenStack component within the time window; may include other processes'
-        predicate = """l.dataset='OpenStack' AND (l.id=s.id OR (l.component=s.component
+        scope = 'OpenStack component within the time window plus lines of the same event (pid, ts); may include other processes'
+        predicate = f"""l.dataset='OpenStack' AND (l.id=s.id OR {SAME_EVENT} OR (l.component=s.component
             AND l.ts BETWEEN s.ts - %s * INTERVAL '1 second' AND s.ts + %s * INTERVAL '1 second'))"""
         params += [fenster_sek, fenster_sek]
+    # Event lines rank directly after the anchor so a long request timeline cannot crowd them out.
     sql = """SELECT l.id, l.ts, l.dataset, l.level, l.component, l.service, l.node, l.pid,
         l.request_id, l.instance_id, l.template_id, l.alert, l.message
         FROM logs l JOIN logs s ON s.id=%s WHERE """ + predicate + """
-        ORDER BY CASE WHEN l.id=s.id THEN 0 ELSE 1 END,
+        ORDER BY CASE WHEN l.id=s.id THEN 0 WHEN l.dataset='OpenStack' AND """ + SAME_EVENT + """ THEN 1 ELSE 2 END,
                  ABS(EXTRACT(EPOCH FROM (l.ts-s.ts))) NULLS LAST, l.id LIMIT %s"""
     result = _limited(sql, params, limit)
     result['daten'].sort(key=lambda r: (str(r.get('ts') or ''), r['id']))
     result['meta'].update(scope=scope, anchor=anchor, fenster_sek=fenster_sek)
+    if anchor['dataset'] == 'OpenStack' and anchor.get('pid') is not None and anchor.get('ts') is not None:
+        event = [r for r in result['daten'] if r.get('pid') == anchor['pid'] and r.get('ts') == anchor['ts']]
+        result['meta']['ereignis'] = {'pid': anchor['pid'], 'ts': anchor['ts'], 'zeilen_im_ergebnis': len(event),
+            'regel': 'Lines sharing (pid, ts) with the anchor, e.g. a multi-line traceback.'}
     result['belege'] = [{'name': 'Anchor lookup', **anchor_result}]
     if anchor['dataset'] == 'BGL':
         stats = _supplement(result, 'Same-template outbreak across all BGL nodes', """

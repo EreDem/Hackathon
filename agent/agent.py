@@ -25,6 +25,11 @@ def encode(value) -> str:
     return json.dumps(value, ensure_ascii=False, default=str, allow_nan=False)
 
 
+def belegverweise(text: str) -> set[str]:
+    """Alle Beleg-IDs in eckigen Klammern, auch gemeinsam geklammerte wie [B1, B2] oder [B3; B4]."""
+    return {ref for gruppe in re.findall(r"\[([^\[\]]*)\]", text) for ref in re.findall(r"\bB\d+\b", gruppe)}
+
+
 class Agent:
     def __init__(self, client, handlers: dict[str, Callable], budget: Budget,
                  model: str = MODELL, testdaten: bool = False):
@@ -127,7 +132,7 @@ class Agent:
             messages.extend(item.model_dump(exclude_none=True) for item in response.output)
             if not calls:
                 text = response.output_text.strip()
-                refs = set(re.findall(r"\[(B\d+)\]", text))
+                refs = belegverweise(text)
                 ids = {item["beleg_id"] for item in belege}
                 if not belege or not refs or not refs <= ids:
                     return finish("Es liegt keine ausreichend belegte Antwort vor. "

@@ -9,7 +9,7 @@ import unittest
 from openai import APIConnectionError
 import httpx
 
-from agent.agent import Agent, MAX_REQUESTS, MAX_TOOL_CALLS
+from agent.agent import Agent, MAX_REQUESTS, MAX_TOOL_CALLS, belegverweise
 from agent.budget import Budget, BudgetLimit, MODELL
 from agent.toolkit import TOOLS
 
@@ -117,6 +117,16 @@ class AgentTests(unittest.TestCase):
         result = agent.antworte("Engineer", None, "Test", [])
         self.assertEqual(result["meta"]["status"], "belege_unzureichend")
         self.assertNotIn("B999", result["text"])
+
+    def test_grouped_citations_must_all_exist(self):
+        agent, _ = self.make([response(tool_call()), response(text="Messwert [B1]. Weitere Ursache [B999, B888].")])
+        result = agent.antworte("Engineer", None, "Test", [])
+        self.assertEqual(result["meta"]["status"], "belege_unzureichend")
+        self.assertNotIn("B999", result["text"])
+
+    def test_citation_groups_are_parsed_completely(self):
+        text = "A [B1]. B [B2, B3]; C [B4; B5]. Template [BGL-0019], VM [instance: ab12], Text ohne Klammer B6."
+        self.assertEqual(belegverweise(text), {"B1", "B2", "B3", "B4", "B5"})
 
     def test_evidence_is_isolated_between_questions(self):
         agent, _ = self.make([response(tool_call()), response(), response(tool_call()), response()])
