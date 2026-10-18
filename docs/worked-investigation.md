@@ -4,6 +4,14 @@ This is an actual run of the integrated agent on the complete public BGL and Ope
 
 Captured: 2026-10-17T15:58:21.054345+00:00. Evidence references B1, B2 and B3 restart within each role.
 
+The final application demo uses an additional Engineer example: the recurring
+OpenStack cache-manager traceback (`InvalidDiskInfo`, missing instance disk).
+Its actual live response and SQL are included in
+[presentation evidence](../submission/evidence/presentation-evidence.json), under
+`cache_manager_live_run`. The VM investigation below remains a separate,
+completed example. See the [jury guide](../submission/Jury-Guide.md) for the
+mapping between written evidence, slides and the video.
+
 [Download the complete tool inputs, executed SQL, results and original agent responses](evidence/worked-investigation.json). The JSON includes supporting queries and completeness/model-view metadata omitted from the short tables below.
 
 ## Shared corpus and scope

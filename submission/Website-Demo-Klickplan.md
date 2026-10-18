@@ -1,5 +1,8 @@
 # Website-Demo: Klicks und passender Sprechtext
 
+> Älterer Aufnahmeplan. Maßgeblich ist jetzt der [aktuelle Sprechtext zum App-Video](Video-Narration-English.md).
+> Die Slides werden separat abgegeben und im aktuellen Video nicht eingeblendet.
+
 Eine Person liest Englisch vor. Eine zweite Person bedient die App. Alternativ nehmt ihr drei echte App-Clips auf und sprecht den Text anschließend darüber. Zielzeit des gesamten Videos: etwa 4:30 Minuten.
 
 ## 0. Vor der Aufnahme

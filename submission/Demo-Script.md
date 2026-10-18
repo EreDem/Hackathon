@@ -1,5 +1,8 @@
 # Log Observatory: 4:30 demo
 
+> Archived recording plan. Superseded by [the current app-only narration](Video-Narration-English.md).
+> Slides are submitted separately and are not shown in the current video.
+
 Englischer Sprechtext, deutsche Regie. Nur den Text unter **SPEAK** vorlesen.
 
 ## Zuerst vorbereiten

@@ -81,10 +81,12 @@ priority scores for Team Leads and Managers through `top_patterns`,
 - **Inspect the evidence:** executed SQL, scope, counts, score factors and
   completeness metadata remain available for checking.
 
-**Submission slides and recording script:** [English slides (PDF)](submission/Log-Observatory-Slides.pdf),
-[editable deck](submission/Log-Observatory-Slides.pptx) and
-[4:30 demo script / recording guide](submission/Demo-Script-and-Recording-Guide.pdf).
-The team records the actual video using the three real application workflows.
+**Jury entry point:** [submission guide and requirement map](submission/Jury-Guide.md),
+[English slides (PDF)](submission/Log-Observatory-Slides.pdf), and
+[editable deck](submission/Log-Observatory-Slides.pptx).
+Slides and video are separate deliverables. The current [English narration](submission/Video-Narration-English.md)
+accompanies an application-only demonstration of about 3:08; the final team-voiced
+video is supplied separately in the submission form.
 
 ## Jury quick-start (Windows / PowerShell)
 
@@ -164,10 +166,11 @@ existed before setup. Keep both files private. The compatibility command
 `python ingest/run_sql.py ingest/load.sql` uses the same Docker admin connection
 and stops at the first SQL error.
 
-**Using an organiser-provided instance instead:** follow its supplied loader and
-server-side file-path instructions, copy `.env.example` to `.env` once, and set
-`DB_DSN` to the supplied PostgreSQL-compatible connection string. Skip the local
-Docker/login steps. Do not point the table-replacing loader at unrelated data.
+**Guidance clarification:** the later SereneDB technical guidance supersedes the
+brief's references to a supplied database and loader. No shared instance, loader,
+schema or ownership table is supplied. This submission builds them and runs
+SereneDB locally in Docker. `DB_DSN` refers to that local instance; the complete
+load SQL, parser and fictional ownership map are included in this repository.
 
 ### 4. Start and try the three roles
 
@@ -339,20 +342,22 @@ statuses preserve evidence and show English diagnostics instead of a successful
 answer. The UI displays evidence IDs, model-view truncation, token usage and
 estimated cost. Direct exploration remains available without a model key.
 
-### Five-minute demo
+### Application-only demo (about 3:08; maximum five minutes)
 
-1. **0:00–0:40:** show scope and the query-evidence contract.
-2. **0:40–2:00:** Engineer/BGL: run the prepared search, select a hit, inspect the
-   event lens and SQL. Discuss observations separately from possible causes.
-3. **2:00–3:10:** Team Lead/HPC Kernel: analyze patterns, change the selected
-   pattern, and show the trend and its observation gaps.
-4. **3:10–4:20:** Manager/BGL: compare frequency with reach, open score factors,
-   then investigate supporting logs.
-5. **4:20–5:00:** when the OpenAI key is configured, ask a prepared role-specific
-   question and show its executed evidence; download the investigation JSON.
+1. **0:00–0:18:** explain the operations problem and the three roles in the app.
+2. **0:18–1:03:** Engineer/OpenStack: search the cache-manager failure, ask the
+   agent, inspect `InvalidDiskInfo` and the executed tool/SQL evidence.
+3. **1:03–1:51:** Team Lead/HPC Kernel/BGL: compare recurring patterns, select a
+   weekly trend, ask the agent and inspect its evidence.
+4. **1:51–2:47:** Manager/BGL: compare frequency with node reach, inspect the
+   priority factors, ask the agent and open the ranking SQL/results.
+5. **2:47–3:08:** explain the proposed supervised pilot and the known limits.
 
-For the challenge submission, complete the agent-backed three-role demonstration;
-direct exploration alone does not demonstrate agent tool selection.
+The [current narration](submission/Video-Narration-English.md) matches these
+workflows. Slides are submitted separately; they do not need to appear in the
+video. All three roles must show actual agent tool calls and supporting queries,
+not direct exploration alone. The final recording with the team's voice still
+needs its own publicly accessible video link.
 
 ### UI and tool checks
 

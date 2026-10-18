@@ -1,0 +1,148 @@
+{
+  "checked_at_utc": "2026-10-18T21:14:48.700164+00:00",
+  "source_head_before_documentation_commit": "0835f22378f1e001439bdcde35d016ead31de598",
+  "scope": "Existing full local corpus; read-only checks. No reload, package reinstall, or model/API call. Not a new clean-checkout rehearsal.",
+  "llm_calls": 0,
+  "database_checks": {
+    "corpus": {
+      "sql": "SELECT dataset, COUNT(*) AS log_lines, MIN(ts) AS first_observed, MAX(ts) AS last_observed FROM logs GROUP BY dataset ORDER BY dataset",
+      "zeilen": 2,
+      "daten": [
+        {
+          "dataset": "BGL",
+          "log_lines": 4747963,
+          "first_observed": "2005-06-03 15:42:50.363779+00:00",
+          "last_observed": "2006-01-04 08:00:05.233639+00:00"
+        },
+        {
+          "dataset": "OpenStack",
+          "log_lines": 207820,
+          "first_observed": "2017-05-14 19:39:01.445000+00:00",
+          "last_observed": "2017-05-17 12:02:35.320000+00:00"
+        }
+      ],
+      "observed_seconds": 0.0543
+    },
+    "bgl_comparison": {
+      "sql": "SELECT template_id, COUNT(*) AS log_lines,\n       COUNT(DISTINCT NULLIF(NULLIF(node, 'NULL'), '-')) AS nodes\nFROM logs\nWHERE dataset = 'BGL' AND level IN ('ERROR', 'FATAL')\n  AND message IN ('data TLB error interrupt', 'data storage interrupt')\nGROUP BY template_id\nORDER BY log_lines DESC;",
+      "zeilen": 2,
+      "daten": [
+        {
+          "template_id": "BGL-0019",
+          "log_lines": 152734,
+          "nodes": 541
+        },
+        {
+          "template_id": "BGL-0119",
+          "log_lines": 63491,
+          "nodes": 22529
+        }
+      ],
+      "observed_seconds": 0.1591
+    },
+    "cache_manager_headers": {
+      "sql": "SELECT COUNT(*) AS matching_failure_headers FROM logs_idx WHERE dataset = 'OpenStack' AND message @@ ts_phrase('ComputeManager._run_image_cache_manager_pass') AND ts BETWEEN '2017-05-14 00:00:00+00'::TIMESTAMPTZ AND '2017-05-17 23:59:59.999999+00'::TIMESTAMPTZ",
+      "zeilen": 1,
+      "daten": [
+        {
+          "matching_failure_headers": 8
+        }
+      ],
+      "observed_seconds": 0.0193
+    }
+  },
+  "verification": {
+    "unit_and_real_sql_regressions": {
+      "status": "passed",
+      "tests": 105
+    },
+    "full_corpus_analytics": {
+      "status": "passed",
+      "assertions": 13
+    },
+    "real_data_ui": {
+      "status": "passed",
+      "roles": [
+        "Engineer",
+        "Team Lead",
+        "Manager"
+      ],
+      "model_calls": 0
+    },
+    "dependency_check": {
+      "status": "passed",
+      "message": "No broken requirements found."
+    },
+    "mcp_protocol": {
+      "status": "passed",
+      "protocol_version": "2026-07-28",
+      "tools": [
+        "search_logs",
+        "get_context",
+        "vm_dauer",
+        "top_patterns",
+        "pattern_trend",
+        "priority_ranking",
+        "corpus_overview"
+      ],
+      "llm_calls": 0,
+      "evidence_file": "mcp-final-check.json",
+      "actual_claude_client_test": false
+    },
+    "documentation_links": {
+      "status": "passed",
+      "local_links_checked": 66,
+      "files": [
+        "README.md",
+        "docs/clean-checkout-rehearsal.md",
+        "docs/worked-investigation.md",
+        "submission/README.md",
+        "submission/Abgabelinks.md",
+        "submission/Jury-Guide.md",
+        "submission/Video-Narration-English.md"
+      ]
+    }
+  },
+  "anonymous_access": {
+    "repository": {
+      "url": "https://api.github.com/repos/EreDem/Hackathon",
+      "http_status": 200,
+      "authenticated": false,
+      "public": true,
+      "default_branch": "main"
+    },
+    "slides": {
+      "url": "https://raw.githubusercontent.com/EreDem/Hackathon/6a9c911ec4fcf359edbd55bf4298c13a27b3d240/submission/Log-Observatory-Slides.pdf",
+      "http_status": 200,
+      "authenticated": false,
+      "bytes": 1096231,
+      "sha256": "cdc1a1afe95bf6724751a8ab63a7d4e8c62cf9978162db789d9f427855ecd1ec",
+      "matches_local": true
+    }
+  },
+  "tracked_secret_filenames": [],
+  "source_sha256": {
+    "app.py": "8ed653e05e8c6821768ac183cd4ab811dce60d13ea7ed0b9033cdc1ccb7bbf50",
+    "agent/agent.py": "f37499946bdc86dc08b653167000c02f23c2ee44ce42c7a6abbcafe6968be177",
+    "agent/toolkit.py": "70be9ce2105c46d387cfa3a2c19cf821892edbe09abbb8e0c818f2b57119f9ee",
+    "tools/db.py": "9d7d13637019e9726757e12060bf75c0aae7b37a2dc45487af92a1a81a7990b5",
+    "tools/engineer.py": "d23367497d19b0c21fdd03ef4d236d435a2b92af3c1a813d940dee3a16db980d",
+    "tools/analytics.py": "a0c013c11170a3bd8b871efbfcf582e6fea43d3189d18fa701f160dd947279c4",
+    "ingest/prepare.py": "1b494d1cd099a32ef5dcb497a8aa2cf503edd9e8e683da1569b5e496c1040e08",
+    "ingest/load.sql": "f095359b87a52ae66ae264365875614c8f36e6235debb78bc704fe3a34049eb7",
+    "ingest/configure_local.py": "5f80a5945d09379758eae41f34a0d62f47139f4f61688b5dbcea86569f68e16a",
+    "ingest/run_sql.py": "b58fb8a066316ea12940270f1470d1c1a2b30fd68ad8191aa47e65c48d4db5f9",
+    "mcp_server/server.py": "a9afae77ca969ffdb54a99cb28154b040c31a22402c24717a92ecfa232dea8f0"
+  },
+  "deliverables": {
+    "repository_and_slides": "verified; updated documentation to be published with this report",
+    "final_team_voiced_video": {
+      "status": "pending",
+      "reason": "Team reports the final file is with a friend; no final file or public URL supplied for verification."
+    },
+    "claude_mcp_recording": {
+      "status": "pending",
+      "reason": "Team confirmed no actual Claude recording/transcript yet."
+    }
+  }
+}
