@@ -4,6 +4,11 @@ Prototyp, der Log-Daten (BGL + OpenStack) in Antworten für drei Rollen verwande
 **Engineer** (Ursache eines Fehlers), **Team Lead** (wiederkehrende Probleme im Team), **Manager** (Priorisierung).
 Ablauf: **Frage → Belege (SereneDB) → Empfehlung (KI-Agent)**. Leitprinzip: SQL rechnet, das LLM erklärt.
 
+**Submission slides and recording script:** [English slides (PDF)](submission/Log-Observatory-Slides.pdf),
+[editable deck](submission/Log-Observatory-Slides.pptx) and
+[4:30 demo script / recording guide](submission/Demo-Script-and-Recording-Guide.pdf).
+The team records the actual video using the three real application workflows.
+
 ## Jury quick-start (Windows / PowerShell)
 
 This submission includes a Streamlit web application with an integrated tool-calling
