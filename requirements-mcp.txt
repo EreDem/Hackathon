@@ -1,0 +1,5 @@
+# Optionaler MCP-Zugang, ohne OpenAI-SDK oder Benutzeroberflaeche.
+mcp==2.3.0
+python-dotenv>=1,<2
+pydantic>=2,<3
+psycopg[binary]>=3.2,<4

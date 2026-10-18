@@ -6,9 +6,11 @@ Ablauf: **Frage → Belege (SereneDB) → Empfehlung (KI-Agent)**. Leitprinzip: 
 
 ## Jury quick-start (Windows / PowerShell)
 
-This submission is a Streamlit web application with an integrated tool-calling
-agent. It is **not an MCP server**; the brief accepts a web UI demonstrating agent
-tool calls. MCP and its separate award are optional.
+This submission includes a Streamlit web application with an integrated tool-calling
+agent and a **local MCP server** exposing the same search and analytics tools.
+For the separate Best MCP Server award, follow the **[Claude/MCP setup and demo](docs/MCP.md)**
+(seven tools, three role prompts, bounded results and retrievable SQL evidence).
+The MCP server needs no OpenAI key; the connected host supplies its own model.
 
 Start with the [worked investigation](docs/worked-investigation.md), its
 [executed SQL and actual agent answers](docs/evidence/worked-investigation.json),
