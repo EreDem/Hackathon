@@ -6,6 +6,7 @@ out/*
 
 # Geheimnisse
 .env
+.env.setup
 .agent-usage.sqlite3*
 
 # Python

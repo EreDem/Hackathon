@@ -145,8 +145,9 @@ nicht gesetzt. Keine Zugangsdaten ins Repository übernehmen. Der Port bleibt
 wie in Compose auf `127.0.0.1:7890` begrenzt.
 
 Die Basis-Einrichtung auf weiteren Rechnern beschreibt die vorhandene README.
-Für eine passwortgeschützte Instanz beim unveränderten `ingest/run_sql.py`
-zusätzlich `PGPASSWORD` lokal setzen, da dieses Skript `DB_DSN` nicht liest.
+Der optionale Helfer `ingest/run_sql.py` verwendet den containerlokalen
+Admin-Zugang aus der README und stoppt beim ersten SQL-Fehler. `DB_DSN` bleibt
+der Lesezugang für App und Tools.
 Der Analytics-Testtransport liest zuerst `ANALYTICS_TEST_DSN`, sonst `DB_DSN`
 aus der Umgebung/`.env`. Ohne Angabe gilt die im Team vereinbarte lokale DSN.
 

@@ -61,10 +61,26 @@ docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -v ON_ERROR_STOP=1 -f
 
 The setup script creates a password-protected `log_observatory` login with schema
 usage and SELECT on `logs`, `templates` and `ownership`. Its generated connection
-string is saved only in ignored `.env`; the password is never printed. Existing
-configured credentials are preserved. On later starts, keep `.env` and simply run
+string is staged in ignored `.env.setup`, then moved to ignored `.env`; the
+password is never printed. Existing configured credentials are preserved.
+On later starts, keep `.env` and simply run
 `docker compose up -d`. A table reload requires restoring its SELECT grants (see
 below). No broad trust-authentication rule is needed.
+
+Role creation and grants run in one transaction. If setup fails, the existing
+`.env` stays intact and `.env.setup` retains the generated credentials. Before
+retrying, check the local role without printing its password:
+
+```powershell
+docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -c "SELECT rolname FROM pg_roles WHERE rolname = 'log_observatory';"
+```
+
+If no role exists, fix the reported setup prerequisite, remove `.env.setup` and
+retry. If this setup committed successfully but saving `.env` failed, replace
+`.env` with `.env.setup`. Do not use that recovery file for a role that already
+existed before setup. Keep both files private. The compatibility command
+`python ingest/run_sql.py ingest/load.sql` uses the same Docker admin connection
+and stops at the first SQL error.
 
 **Using an organiser-provided instance instead:** follow its supplied loader and
 server-side file-path instructions, copy `.env.example` to `.env` once, and set
