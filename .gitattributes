@@ -1,0 +1,3 @@
+# Office/PDF-Exporte unveraendert speichern, auch bei Windows autocrlf.
+*.pdf binary
+*.pptx binary

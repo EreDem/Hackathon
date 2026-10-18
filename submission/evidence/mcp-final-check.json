@@ -1,0 +1,2203 @@
+{
+  "checked_at": "2026-10-18T21:14:14.772368+00:00",
+  "transport": "stdio subprocess",
+  "client": "official MCP Python SDK; not a Claude Desktop end-to-end test",
+  "requested_mode": "auto",
+  "llm_calls": 0,
+  "cases": [
+    {
+      "tool": "corpus_overview",
+      "arguments": {},
+      "seconds": 0.337,
+      "resource_roundtrip": true,
+      "response": {
+        "evidence_id": "0592a632a404b5967ab5d8e45f0f5670b807cc661b77565ca956b4ade8a13c00",
+        "evidence_uri": "evidence://0592a632a404b5967ab5d8e45f0f5670b807cc661b77565ca956b4ade8a13c00",
+        "tool": "corpus_overview",
+        "arguments": {},
+        "result": {
+          "sql": "-- Umfang und historische Zeitgrenzen je Datensatz/Team; keine Incident-Zaehlung.\nSELECT l.dataset, COALESCE(o.team, 'Unassigned') AS team,\n       COUNT(*) AS logzeilen_gesamt, MIN(l.ts) AS erstmals, MAX(l.ts) AS zuletzt\nFROM logs l LEFT JOIN ownership o\n  ON o.dataset = l.dataset AND o.component = l.component\nGROUP BY l.dataset, o.team\nORDER BY l.dataset, o.team",
+          "zeilen": 9,
+          "daten": [
+            {
+              "dataset": "BGL",
+              "team": "HPC Application Support",
+              "logzeilen_gesamt": 228536,
+              "erstmals": "2005-06-03T16:17:40.190183Z",
+              "zuletzt": "2006-01-03T11:56:38.877831Z"
+            },
+            {
+              "dataset": "BGL",
+              "team": "HPC Control System",
+              "logzeilen_gesamt": 89286,
+              "erstmals": "2005-06-03T23:42:01.596122Z",
+              "zuletzt": "2005-12-29T15:28:22.320009Z"
+            },
+            {
+              "dataset": "BGL",
+              "team": "HPC Hardware & Interconnect",
+              "logzeilen_gesamt": 103493,
+              "erstmals": "2005-06-03T15:47:20.852959Z",
+              "zuletzt": "2005-12-29T16:20:57.380145Z"
+            },
+            {
+              "dataset": "BGL",
+              "team": "HPC Kernel",
+              "logzeilen_gesamt": 4324967,
+              "erstmals": "2005-06-03T15:42:50.363779Z",
+              "zuletzt": "2006-01-04T08:00:05.233639Z"
+            },
+            {
+              "dataset": "BGL",
+              "team": "HPC Operations",
+              "logzeilen_gesamt": 1681,
+              "erstmals": "2005-07-29T08:01:12.850473Z",
+              "zuletzt": "2005-11-18T08:28:06.330682Z"
+            },
+            {
+              "dataset": "OpenStack",
+              "team": "Cloud API",
+              "logzeilen_gesamt": 102868,
+              "erstmals": "2017-05-14T19:39:01.445000Z",
+              "zuletzt": "2017-05-17T11:55:11.889000Z"
+            },
+            {
+              "dataset": "OpenStack",
+              "team": "Cloud Compute",
+              "logzeilen_gesamt": 48452,
+              "erstmals": "2017-05-14T19:39:03.166000Z",
+              "zuletzt": "2017-05-17T12:02:13.017000Z"
+            },
+            {
+              "dataset": "OpenStack",
+              "team": "Cloud Scheduling",
+              "logzeilen_gesamt": 866,
+              "erstmals": "2017-05-14T19:40:50.128000Z",
+              "zuletzt": "2017-05-17T12:00:33.134000Z"
+            },
+            {
+              "dataset": "OpenStack",
+              "team": "Cloud Virtualization",
+              "logzeilen_gesamt": 55634,
+              "erstmals": "2017-05-14T19:39:02.007000Z",
+              "zuletzt": "2017-05-17T12:02:35.320000Z"
+            }
+          ],
+          "truncated": false,
+          "meta": {
+            "count_unit": "log lines, not incidents",
+            "limit": 100,
+            "dates": "Historical timestamps as stored; BGL local time was labelled UTC during ingestion."
+          }
+        },
+        "view": {
+          "truncated": false,
+          "changes": [],
+          "counts": "zeilen and all SQL aggregates retain their original meaning; shown_items describes only this MCP preview.",
+          "resource_scope": "Full tool response, including its own SQL limits/truncation; not an export of the entire database."
+        }
+      },
+      "full_response_bytes": 2097
+    },
+    {
+      "tool": "search_logs",
+      "arguments": {
+        "query": "data TLB error interrupt",
+        "dataset": "BGL",
+        "limit": 3
+      },
+      "seconds": 0.133,
+      "resource_roundtrip": true,
+      "response": {
+        "evidence_id": "7dd026cdaad922537eef7c3b19eeb317790f2f7d4a2dfd1a6c23df3a6e8459c4",
+        "evidence_uri": "evidence://7dd026cdaad922537eef7c3b19eeb317790f2f7d4a2dfd1a6c23df3a6e8459c4",
+        "tool": "search_logs",
+        "arguments": {
+          "von": null,
+          "bis": null,
+          "dataset": "BGL",
+          "team": null,
+          "query": "data TLB error interrupt",
+          "level": null,
+          "limit": 3,
+          "modus": "phrase"
+        },
+        "result": {
+          "sql": "SELECT i.id, i.ts, i.dataset, i.level, i.component, i.service,\n        COALESCE(o.team, 'Unassigned') AS team, i.template_id, i.alert, i.node,\n        i.instance_id, i.request_id, i.message\n        FROM logs_idx i LEFT JOIN ownership o ON o.dataset=i.dataset AND o.component=i.component\n        WHERE i.message @@ ts_phrase('data TLB error interrupt') AND i.dataset = 'BGL' ORDER BY i.ts, i.id LIMIT 4",
+          "zeilen": 3,
+          "daten": [
+            {
+              "id": 17742,
+              "ts": "2005-06-05T00:08:13.410695Z",
+              "dataset": "BGL",
+              "level": "FATAL",
+              "component": "KERNEL",
+              "service": "RAS",
+              "team": "HPC Kernel",
+              "template_id": "BGL-0019",
+              "alert": "KERNDTLB",
+              "node": "R20-M0-N2-C:J10-U11",
+              "instance_id": null,
+              "request_id": null,
+              "message": "data TLB error interrupt"
+            },
+            {
+              "id": 17745,
+              "ts": "2005-06-05T00:08:13.577322Z",
+              "dataset": "BGL",
+              "level": "FATAL",
+              "component": "KERNEL",
+              "service": "RAS",
+              "team": "HPC Kernel",
+              "template_id": "BGL-0019",
+              "alert": "KERNDTLB",
+              "node": "R20-M0-N2-C:J14-U01",
+              "instance_id": null,
+              "request_id": null,
+              "message": "data TLB error interrupt"
+            },
+            {
+              "id": 17758,
+              "ts": "2005-06-05T00:08:13.959099Z",
+              "dataset": "BGL",
+              "level": "FATAL",
+              "component": "KERNEL",
+              "service": "RAS",
+              "team": "HPC Kernel",
+              "template_id": "BGL-0019",
+              "alert": "KERNDTLB",
+              "node": "R20-M0-ND-C:J13-U11",
+              "instance_id": null,
+              "request_id": null,
+              "message": "data TLB error interrupt"
+            }
+          ],
+          "meta": {
+            "limit": 3,
+            "gekuerzt": true,
+            "filter": {
+              "query": "data TLB error interrupt",
+              "dataset": "BGL",
+              "level": null,
+              "team": null,
+              "von": null,
+              "bis": null
+            },
+            "modus": "phrase",
+            "requested_modus": "phrase",
+            "summary_gekuerzt": false
+          },
+          "truncated": true,
+          "belege": [
+            {
+              "name": "Search statistics (top 10 groups; full matching count)",
+              "sql": "SELECT i.template_id, ANY_VALUE(t.template) AS template, i.dataset,\n        i.level, i.alert, COALESCE(o.team, 'Unassigned') AS team, COUNT(*) AS treffer,\n        SUM(COUNT(*)) OVER () AS gesamt_treffer, COUNT(*) OVER () AS gruppen_gesamt,\n        COUNT(DISTINCT NULLIF(NULLIF(i.node, 'NULL'), '-')) AS knoten,\n        COUNT(DISTINCT i.instance_id) AS vms, MIN(i.ts) AS erstmals, MAX(i.ts) AS zuletzt\n        FROM logs_idx i LEFT JOIN ownership o ON o.dataset=i.dataset AND o.component=i.component\n        LEFT JOIN templates t ON t.dataset=i.dataset AND t.template_id=i.template_id\n        WHERE i.message @@ ts_phrase('data TLB error interrupt') AND i.dataset = 'BGL' GROUP BY i.template_id, i.dataset, i.level, i.alert, o.team\n        ORDER BY treffer DESC, i.template_id LIMIT 10",
+              "zeilen": 1,
+              "daten": [
+                {
+                  "template_id": "BGL-0019",
+                  "template": "data TLB error interrupt",
+                  "dataset": "BGL",
+                  "level": "FATAL",
+                  "alert": "KERNDTLB",
+                  "team": "HPC Kernel",
+                  "treffer": 152734,
+                  "gesamt_treffer": "152734",
+                  "gruppen_gesamt": 1,
+                  "knoten": 541,
+                  "vms": 0,
+                  "erstmals": "2005-06-05T00:08:13.410695Z",
+                  "zuletzt": "2005-11-28T10:01:47.587002Z"
+                }
+              ]
+            }
+          ],
+          "suchmodus": "phrase",
+          "gesamt_treffer": 152734,
+          "muster_zusammenfassung": [
+            {
+              "template_id": "BGL-0019",
+              "template": "data TLB error interrupt",
+              "dataset": "BGL",
+              "level": "FATAL",
+              "alert": "KERNDTLB",
+              "team": "HPC Kernel",
+              "treffer": 152734,
+              "gesamt_treffer": "152734",
+              "gruppen_gesamt": 1,
+              "knoten": 541,
+              "vms": 0,
+              "erstmals": "2005-06-05T00:08:13.410695Z",
+              "zuletzt": "2005-11-28T10:01:47.587002Z"
+            }
+          ]
+        },
+        "view": {
+          "truncated": false,
+          "changes": [],
+          "counts": "zeilen and all SQL aggregates retain their original meaning; shown_items describes only this MCP preview.",
+          "resource_scope": "Full tool response, including its own SQL limits/truncation; not an export of the entire database."
+        }
+      },
+      "full_response_bytes": 3294
+    },
+    {
+      "tool": "get_context",
+      "arguments": {
+        "log_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+        "limit": 30
+      },
+      "seconds": 0.134,
+      "resource_roundtrip": true,
+      "response": {
+        "evidence_id": "96a89759ac7854361d2ccbbabd4b9184f98a694c39ee8972554cf7843fd3f36b",
+        "evidence_uri": "evidence://96a89759ac7854361d2ccbbabd4b9184f98a694c39ee8972554cf7843fd3f36b",
+        "tool": "get_context",
+        "arguments": {
+          "log_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+          "fenster_sek": 600,
+          "limit": 30
+        },
+        "result": {
+          "sql": "SELECT l.id, l.ts, l.dataset, l.level, l.component, l.service, l.node, l.pid,\n        l.request_id, l.instance_id, l.template_id, l.alert, l.message\n        FROM logs l JOIN logs s ON s.id=4759864 WHERE l.dataset='OpenStack' AND (l.instance_id=s.instance_id OR (l.pid=s.pid AND l.ts=s.ts))\n        ORDER BY CASE WHEN l.id=s.id THEN 0 WHEN l.dataset='OpenStack' AND (l.pid=s.pid AND l.ts=s.ts) THEN 1 ELSE 2 END,\n                 ABS(EXTRACT(EPOCH FROM (l.ts-s.ts))) NULLS LAST, l.id LIMIT 31",
+          "zeilen": 25,
+          "daten": [
+            {
+              "id": 4759864,
+              "ts": "2017-05-14T21:07:37.102000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0028",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Attempting claim: memory 2048 MB, disk 20 GB, vcpus 1 CPU"
+            },
+            {
+              "id": 4759865,
+              "ts": "2017-05-14T21:07:37.103000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0029",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Total memory: 64172 MB, used: 512.00 MB"
+            },
+            {
+              "id": 4759866,
+              "ts": "2017-05-14T21:07:37.103000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0030",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] memory limit: 96258.00 MB, free: 95746.00 MB"
+            },
+            {
+              "id": 4759867,
+              "ts": "2017-05-14T21:07:37.104000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0031",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Total disk: 15 GB, used: 0.00 GB"
+            },
+            {
+              "id": 4759868,
+              "ts": "2017-05-14T21:07:37.105000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0032",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] disk limit not specified, defaulting to unlimited"
+            },
+            {
+              "id": 4759869,
+              "ts": "2017-05-14T21:07:37.105000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0033",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Total vcpu: 16 VCPU, used: 0.00 VCPU"
+            },
+            {
+              "id": 4759870,
+              "ts": "2017-05-14T21:07:37.106000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0034",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] vcpu limit not specified, defaulting to unlimited"
+            },
+            {
+              "id": 4759871,
+              "ts": "2017-05-14T21:07:37.138000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0035",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Claim successful"
+            },
+            {
+              "id": 4759874,
+              "ts": "2017-05-14T21:07:37.924000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.virt.libvirt.driver",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0002",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Creating image"
+            },
+            {
+              "id": 4759923,
+              "ts": "2017-05-14T21:08:12.571000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0005",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] VM Started (Lifecycle Event)"
+            },
+            {
+              "id": 4759924,
+              "ts": "2017-05-14T21:08:12.636000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0006",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] VM Paused (Lifecycle Event)"
+            },
+            {
+              "id": 4759925,
+              "ts": "2017-05-14T21:08:12.757000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0007",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] During sync_power_state the instance has a pending task (spawning). Skip."
+            },
+            {
+              "id": 4759941,
+              "ts": "2017-05-14T21:08:19.729000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0013",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] VM Resumed (Lifecycle Event)"
+            },
+            {
+              "id": 4759942,
+              "ts": "2017-05-14T21:08:19.735000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.virt.libvirt.driver",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": null,
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0014",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Instance spawned successfully."
+            },
+            {
+              "id": 4759943,
+              "ts": "2017-05-14T21:08:19.736000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0015",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Took 41.81 seconds to spawn the instance on the hypervisor."
+            },
+            {
+              "id": 4759944,
+              "ts": "2017-05-14T21:08:19.873000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0007",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] During sync_power_state the instance has a pending task (spawning). Skip."
+            },
+            {
+              "id": 4759945,
+              "ts": "2017-05-14T21:08:19.874000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0013",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] VM Resumed (Lifecycle Event)"
+            },
+            {
+              "id": 4759946,
+              "ts": "2017-05-14T21:08:19.900000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0016",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Took 42.81 seconds to build instance."
+            },
+            {
+              "id": 4759968,
+              "ts": "2017-05-14T21:08:27.296000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-483e1cca-e99f-4342-bee7-8b1c7a6b36e1",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0019",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Terminating instance"
+            },
+            {
+              "id": 4759970,
+              "ts": "2017-05-14T21:08:27.511000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.virt.libvirt.driver",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": null,
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0020",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Instance destroyed successfully."
+            },
+            {
+              "id": 4759972,
+              "ts": "2017-05-14T21:08:28.178000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.virt.libvirt.driver",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-483e1cca-e99f-4342-bee7-8b1c7a6b36e1",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0021",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Deleting instance files /var/lib/nova/instances/544fd51c-4edc-4780-baae-ba1d80a0acfc_del"
+            },
+            {
+              "id": 4759973,
+              "ts": "2017-05-14T21:08:28.179000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.virt.libvirt.driver",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-483e1cca-e99f-4342-bee7-8b1c7a6b36e1",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0022",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Deletion of /var/lib/nova/instances/544fd51c-4edc-4780-baae-ba1d80a0acfc_del complete"
+            },
+            {
+              "id": 4759974,
+              "ts": "2017-05-14T21:08:28.299000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-483e1cca-e99f-4342-bee7-8b1c7a6b36e1",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0015",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Took 1.00 seconds to destroy the instance on the hypervisor."
+            },
+            {
+              "id": 4759976,
+              "ts": "2017-05-14T21:08:28.836000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-483e1cca-e99f-4342-bee7-8b1c7a6b36e1",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0023",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Took 0.54 seconds to deallocate network for instance."
+            },
+            {
+              "id": 4759998,
+              "ts": "2017-05-14T21:08:42.508000Z",
+              "dataset": "OpenStack",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": null,
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0003",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] VM Stopped (Lifecycle Event)"
+            }
+          ],
+          "meta": {
+            "limit": 30,
+            "gekuerzt": false,
+            "scope": "OpenStack VM lifecycle (all recorded times) plus lines of the same event (pid, ts)",
+            "anchor": {
+              "id": 4759864,
+              "dataset": "OpenStack",
+              "ts": "2017-05-14T21:07:37.102000Z",
+              "level": "INFO",
+              "level_raw": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "node": null,
+              "pid": 2931,
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "alert": null,
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Attempting claim: memory 2048 MB, disk 20 GB, vcpus 1 CPU",
+              "template_id": "OS-0028",
+              "source_file": "openstack_abnormal.log",
+              "parsed": true
+            },
+            "fenster_sek": 600,
+            "ereignis": {
+              "pid": 2931,
+              "ts": "2017-05-14T21:07:37.102000Z",
+              "zeilen_im_ergebnis": 1,
+              "regel": "Lines sharing (pid, ts) with the anchor, e.g. a multi-line traceback."
+            }
+          },
+          "truncated": false,
+          "belege": [
+            {
+              "name": "Anchor lookup",
+              "sql": "SELECT * FROM logs WHERE dataset='OpenStack' AND instance_id='544fd51c-4edc-4780-baae-ba1d80a0acfc' ORDER BY ts, id LIMIT 1",
+              "zeilen": 1,
+              "daten": [
+                {
+                  "id": 4759864,
+                  "dataset": "OpenStack",
+                  "ts": "2017-05-14T21:07:37.102000Z",
+                  "level": "INFO",
+                  "level_raw": "INFO",
+                  "component": "nova.compute.claims",
+                  "service": "nova-compute",
+                  "node": null,
+                  "pid": 2931,
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "alert": null,
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Attempting claim: memory 2048 MB, disk 20 GB, vcpus 1 CPU",
+                  "template_id": "OS-0028",
+                  "source_file": "openstack_abnormal.log",
+                  "parsed": true
+                }
+              ]
+            },
+            {
+              "name": "Requests associated with the VM",
+              "sql": "SELECT request_id, COUNT(*) AS zeilen_gesamt, MIN(ts) AS start_ts, MAX(ts) AS end_ts,\n                   COUNT(DISTINCT service) AS anzahl_services,\n                   ARRAY_AGG(DISTINCT service ORDER BY service) AS services\n            FROM logs WHERE dataset='OpenStack' AND request_id IN (\n                SELECT DISTINCT request_id FROM logs WHERE dataset='OpenStack'\n                AND instance_id='544fd51c-4edc-4780-baae-ba1d80a0acfc' AND request_id IS NOT NULL)\n            GROUP BY request_id ORDER BY start_ts, request_id LIMIT 21",
+              "zeilen": 3,
+              "daten": [
+                {
+                  "request_id": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+                  "zeilen_gesamt": 12248,
+                  "start_ts": "2017-05-14T19:39:14.913000Z",
+                  "end_ts": "2017-05-17T06:25:06.721000Z",
+                  "anzahl_services": 1,
+                  "services": [
+                    "nova-compute"
+                  ]
+                },
+                {
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "zeilen_gesamt": 12,
+                  "start_ts": "2017-05-14T21:07:36.772000Z",
+                  "end_ts": "2017-05-14T21:08:19.900000Z",
+                  "anzahl_services": 2,
+                  "services": [
+                    "nova-api",
+                    "nova-compute"
+                  ]
+                },
+                {
+                  "request_id": "req-483e1cca-e99f-4342-bee7-8b1c7a6b36e1",
+                  "zeilen_gesamt": 6,
+                  "start_ts": "2017-05-14T21:08:27.258000Z",
+                  "end_ts": "2017-05-14T21:08:28.836000Z",
+                  "anzahl_services": 2,
+                  "services": [
+                    "nova-api",
+                    "nova-compute"
+                  ]
+                }
+              ],
+              "meta": {
+                "limit": 20,
+                "gekuerzt": false
+              },
+              "truncated": false
+            },
+            {
+              "name": "Related request timeline",
+              "sql": "SELECT id, ts, level, component, service, request_id, instance_id, template_id, message\n                FROM logs WHERE dataset='OpenStack' AND request_id='req-d6143bd4-9784-4e95-a0c8-83fba00530b6' ORDER BY ts, id LIMIT 31",
+              "zeilen": 12,
+              "daten": [
+                {
+                  "id": 4759862,
+                  "ts": "2017-05-14T21:07:36.772000Z",
+                  "level": "INFO",
+                  "component": "nova.osapi_compute.wsgi.server",
+                  "service": "nova-api",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": null,
+                  "template_id": "OS-0012",
+                  "message": "10.11.10.1 \"POST /v2/54fadb412c4e40cdbaed9335e4c35a9e/servers HTTP/1.1\" status: 202 len: 733 time: 0.4794919"
+                },
+                {
+                  "id": 4759864,
+                  "ts": "2017-05-14T21:07:37.102000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.claims",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0028",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Attempting claim: memory 2048 MB, disk 20 GB, vcpus 1 CPU"
+                },
+                {
+                  "id": 4759865,
+                  "ts": "2017-05-14T21:07:37.103000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.claims",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0029",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Total memory: 64172 MB, used: 512.00 MB"
+                },
+                {
+                  "id": 4759866,
+                  "ts": "2017-05-14T21:07:37.103000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.claims",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0030",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] memory limit: 96258.00 MB, free: 95746.00 MB"
+                },
+                {
+                  "id": 4759867,
+                  "ts": "2017-05-14T21:07:37.104000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.claims",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0031",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Total disk: 15 GB, used: 0.00 GB"
+                },
+                {
+                  "id": 4759868,
+                  "ts": "2017-05-14T21:07:37.105000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.claims",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0032",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] disk limit not specified, defaulting to unlimited"
+                },
+                {
+                  "id": 4759869,
+                  "ts": "2017-05-14T21:07:37.105000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.claims",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0033",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Total vcpu: 16 VCPU, used: 0.00 VCPU"
+                },
+                {
+                  "id": 4759870,
+                  "ts": "2017-05-14T21:07:37.106000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.claims",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0034",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] vcpu limit not specified, defaulting to unlimited"
+                },
+                {
+                  "id": 4759871,
+                  "ts": "2017-05-14T21:07:37.138000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.claims",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0035",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Claim successful"
+                },
+                {
+                  "id": 4759874,
+                  "ts": "2017-05-14T21:07:37.924000Z",
+                  "level": "INFO",
+                  "component": "nova.virt.libvirt.driver",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0002",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Creating image"
+                },
+                {
+                  "id": 4759943,
+                  "ts": "2017-05-14T21:08:19.736000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.manager",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0015",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Took 41.81 seconds to spawn the instance on the hypervisor."
+                },
+                {
+                  "id": 4759946,
+                  "ts": "2017-05-14T21:08:19.900000Z",
+                  "level": "INFO",
+                  "component": "nova.compute.manager",
+                  "service": "nova-compute",
+                  "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+                  "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+                  "template_id": "OS-0016",
+                  "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Took 42.81 seconds to build instance."
+                }
+              ],
+              "meta": {
+                "limit": 30,
+                "gekuerzt": false
+              },
+              "truncated": false
+            }
+          ],
+          "requests_der_vm": [
+            {
+              "request_id": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+              "zeilen_gesamt": 12248,
+              "start_ts": "2017-05-14T19:39:14.913000Z",
+              "end_ts": "2017-05-17T06:25:06.721000Z",
+              "anzahl_services": 1,
+              "services": [
+                "nova-compute"
+              ]
+            },
+            {
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "zeilen_gesamt": 12,
+              "start_ts": "2017-05-14T21:07:36.772000Z",
+              "end_ts": "2017-05-14T21:08:19.900000Z",
+              "anzahl_services": 2,
+              "services": [
+                "nova-api",
+                "nova-compute"
+              ]
+            },
+            {
+              "request_id": "req-483e1cca-e99f-4342-bee7-8b1c7a6b36e1",
+              "zeilen_gesamt": 6,
+              "start_ts": "2017-05-14T21:08:27.258000Z",
+              "end_ts": "2017-05-14T21:08:28.836000Z",
+              "anzahl_services": 2,
+              "services": [
+                "nova-api",
+                "nova-compute"
+              ]
+            }
+          ],
+          "request_auswahl": {
+            "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+            "regel": "First linked request within the row limit; otherwise first linked request."
+          },
+          "request_verlauf": [
+            {
+              "id": 4759862,
+              "ts": "2017-05-14T21:07:36.772000Z",
+              "level": "INFO",
+              "component": "nova.osapi_compute.wsgi.server",
+              "service": "nova-api",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": null,
+              "template_id": "OS-0012",
+              "message": "10.11.10.1 \"POST /v2/54fadb412c4e40cdbaed9335e4c35a9e/servers HTTP/1.1\" status: 202 len: 733 time: 0.4794919"
+            },
+            {
+              "id": 4759864,
+              "ts": "2017-05-14T21:07:37.102000Z",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0028",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Attempting claim: memory 2048 MB, disk 20 GB, vcpus 1 CPU"
+            },
+            {
+              "id": 4759865,
+              "ts": "2017-05-14T21:07:37.103000Z",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0029",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Total memory: 64172 MB, used: 512.00 MB"
+            },
+            {
+              "id": 4759866,
+              "ts": "2017-05-14T21:07:37.103000Z",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0030",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] memory limit: 96258.00 MB, free: 95746.00 MB"
+            },
+            {
+              "id": 4759867,
+              "ts": "2017-05-14T21:07:37.104000Z",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0031",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Total disk: 15 GB, used: 0.00 GB"
+            },
+            {
+              "id": 4759868,
+              "ts": "2017-05-14T21:07:37.105000Z",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0032",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] disk limit not specified, defaulting to unlimited"
+            },
+            {
+              "id": 4759869,
+              "ts": "2017-05-14T21:07:37.105000Z",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0033",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Total vcpu: 16 VCPU, used: 0.00 VCPU"
+            },
+            {
+              "id": 4759870,
+              "ts": "2017-05-14T21:07:37.106000Z",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0034",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] vcpu limit not specified, defaulting to unlimited"
+            },
+            {
+              "id": 4759871,
+              "ts": "2017-05-14T21:07:37.138000Z",
+              "level": "INFO",
+              "component": "nova.compute.claims",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0035",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Claim successful"
+            },
+            {
+              "id": 4759874,
+              "ts": "2017-05-14T21:07:37.924000Z",
+              "level": "INFO",
+              "component": "nova.virt.libvirt.driver",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0002",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Creating image"
+            },
+            {
+              "id": 4759943,
+              "ts": "2017-05-14T21:08:19.736000Z",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0015",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Took 41.81 seconds to spawn the instance on the hypervisor."
+            },
+            {
+              "id": 4759946,
+              "ts": "2017-05-14T21:08:19.900000Z",
+              "level": "INFO",
+              "component": "nova.compute.manager",
+              "service": "nova-compute",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "template_id": "OS-0016",
+              "message": "[instance: 544fd51c-4edc-4780-baae-ba1d80a0acfc] Took 42.81 seconds to build instance."
+            }
+          ]
+        },
+        "view": {
+          "truncated": false,
+          "changes": [],
+          "counts": "zeilen and all SQL aggregates retain their original meaning; shown_items describes only this MCP preview.",
+          "resource_scope": "Full tool response, including its own SQL limits/truncation; not an export of the entire database."
+        }
+      },
+      "full_response_bytes": 24042
+    },
+    {
+      "tool": "vm_dauer",
+      "arguments": {
+        "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+        "limit": 4
+      },
+      "seconds": 0.045,
+      "resource_roundtrip": true,
+      "response": {
+        "evidence_id": "b8149478aaa3501be2e199bb4e2c4a2048a5b26e1c367899ed3d42b277d9c5e8",
+        "evidence_uri": "evidence://b8149478aaa3501be2e199bb4e2c4a2048a5b26e1c367899ed3d42b277d9c5e8",
+        "tool": "vm_dauer",
+        "arguments": {
+          "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+          "limit": 4
+        },
+        "result": {
+          "sql": "WITH spawns AS (\n        SELECT id AS log_id, ts, node, instance_id, request_id,\n            CAST(regexp_extract(message, 'Took ([0-9.]+) seconds to spawn', 1) AS DOUBLE) AS sek\n        FROM logs WHERE dataset='OpenStack' AND message LIKE '%seconds to spawn%'\n    ), kennzahlen AS (\n        SELECT COUNT(*) AS gesamt_vms, ROUND(MEDIAN(sek), 1) AS median_sek,\n            ROUND(AVG(sek), 1) AS schnitt_sek, MIN(sek) AS min_sek, MAX(sek) AS max_sek\n        FROM spawns WHERE sek IS NOT NULL\n    ), rangliste AS (\n        SELECT s.*, RANK() OVER (ORDER BY sek DESC) AS platz,\n            ROW_NUMBER() OVER (ORDER BY sek DESC, log_id) AS auswahl,\n            k.gesamt_vms, k.median_sek, k.schnitt_sek, k.min_sek, k.max_sek\n        FROM spawns s CROSS JOIN kennzahlen k WHERE sek IS NOT NULL\n    ) SELECT * FROM rangliste\n    WHERE auswahl<=4 OR auswahl=(SELECT MIN(auswahl) FROM rangliste WHERE instance_id='544fd51c-4edc-4780-baae-ba1d80a0acfc')\n    ORDER BY auswahl LIMIT 6",
+          "zeilen": 4,
+          "daten": [
+            {
+              "log_id": 4764691,
+              "ts": "2017-05-14T21:43:33.762000Z",
+              "node": null,
+              "instance_id": "a445709b-6ad0-40ec-8860-bec60b6ca0c2",
+              "request_id": "req-5b5b0c22-ccce-41fc-8438-ceb520b5a8c2",
+              "sek": 50.72,
+              "platz": 1,
+              "auswahl": 1,
+              "gesamt_vms": 2066,
+              "median_sek": 19.7,
+              "schnitt_sek": 19.8,
+              "min_sek": 10.12,
+              "max_sek": 50.72
+            },
+            {
+              "log_id": 4759943,
+              "ts": "2017-05-14T21:08:19.736000Z",
+              "node": null,
+              "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+              "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+              "sek": 41.81,
+              "platz": 2,
+              "auswahl": 2,
+              "gesamt_vms": 2066,
+              "median_sek": 19.7,
+              "schnitt_sek": 19.8,
+              "min_sek": 10.12,
+              "max_sek": 50.72
+            },
+            {
+              "log_id": 4765197,
+              "ts": "2017-05-14T21:47:20.593000Z",
+              "node": null,
+              "instance_id": "1643649d-2f42-4303-bfcd-7798baec19f9",
+              "request_id": "req-1f32a51e-24e0-4848-9e29-14127a9a6d9a",
+              "sek": 31.27,
+              "platz": 3,
+              "auswahl": 3,
+              "gesamt_vms": 2066,
+              "median_sek": 19.7,
+              "schnitt_sek": 19.8,
+              "min_sek": 10.12,
+              "max_sek": 50.72
+            },
+            {
+              "log_id": 4760049,
+              "ts": "2017-05-14T21:09:11.081000Z",
+              "node": null,
+              "instance_id": "ae651dff-c7ad-43d6-ac96-bbcd820ccca8",
+              "request_id": "req-16d20912-7091-4f34-98c5-c48af9cfb809",
+              "sek": 29.46,
+              "platz": 4,
+              "auswahl": 4,
+              "gesamt_vms": 2066,
+              "median_sek": 19.7,
+              "schnitt_sek": 19.8,
+              "min_sek": 10.12,
+              "max_sek": 50.72
+            }
+          ],
+          "meta": {
+            "limit": 5,
+            "gekuerzt": true,
+            "total_observations": 2066,
+            "scope": "Full OpenStack corpus; active dashboard time/team filters do not apply.",
+            "count_unit": "Spawn log entries, not distinct VMs"
+          },
+          "truncated": true,
+          "gesuchte_vm": {
+            "log_id": 4759943,
+            "ts": "2017-05-14T21:08:19.736000Z",
+            "node": null,
+            "instance_id": "544fd51c-4edc-4780-baae-ba1d80a0acfc",
+            "request_id": "req-d6143bd4-9784-4e95-a0c8-83fba00530b6",
+            "sek": 41.81,
+            "platz": 2,
+            "auswahl": 2,
+            "gesamt_vms": 2066,
+            "median_sek": 19.7,
+            "schnitt_sek": 19.8,
+            "min_sek": 10.12,
+            "max_sek": 50.72
+          }
+        },
+        "view": {
+          "truncated": false,
+          "changes": [],
+          "counts": "zeilen and all SQL aggregates retain their original meaning; shown_items describes only this MCP preview.",
+          "resource_scope": "Full tool response, including its own SQL limits/truncation; not an export of the entire database."
+        }
+      },
+      "full_response_bytes": 2853
+    },
+    {
+      "tool": "top_patterns",
+      "arguments": {
+        "team": "HPC Kernel",
+        "dataset": "BGL",
+        "limit": 5
+      },
+      "seconds": 1.598,
+      "resource_roundtrip": true,
+      "response": {
+        "evidence_id": "1ccdd012d13471718bfa15fc10be353e8b4f399e0aaa9971e6b7c70e8cb10c5c",
+        "evidence_uri": "evidence://1ccdd012d13471718bfa15fc10be353e8b4f399e0aaa9971e6b7c70e8cb10c5c",
+        "tool": "top_patterns",
+        "arguments": {
+          "von": null,
+          "bis": null,
+          "dataset": "BGL",
+          "team": "HPC Kernel",
+          "limit": 5
+        },
+        "result": {
+          "sql": "WITH scope AS (\n        SELECT l.*, COALESCE(o.team, 'Unassigned') AS team\n        FROM logs l LEFT JOIN ownership o\n          ON o.dataset = l.dataset AND o.component = l.component\n        WHERE l.dataset IN ('BGL', 'OpenStack') AND l.dataset = 'BGL' AND COALESCE(o.team, 'Unassigned') = 'HPC Kernel'\n    ), bounds AS (\n        SELECT dataset, COALESCE(NULL::TIMESTAMPTZ, MIN(ts)) AS von,\n               COALESCE(NULL::TIMESTAMPTZ, MAX(ts)) AS bis\n        FROM scope GROUP BY dataset\n    ), selected AS (\n    SELECT * FROM scope WHERE (dataset = 'BGL' AND level IN ('ERROR', 'FATAL')) OR (dataset = 'OpenStack' AND level IN ('WARN', 'ERROR', 'FATAL'))\n), event_keys AS (\n    SELECT *,\n        CASE WHEN dataset = 'OpenStack' AND pid IS NOT NULL AND ts IS NOT NULL\n             THEN pid END AS event_pid,\n        CASE WHEN dataset = 'OpenStack' AND pid IS NOT NULL AND ts IS NOT NULL\n             THEN ts END AS event_ts,\n        CASE WHEN dataset = 'OpenStack' AND pid IS NOT NULL AND ts IS NOT NULL\n             THEN NULL ELSE id END AS single_id\n    FROM selected\n), marked AS (\n    SELECT *,\n        MIN(id) OVER (PARTITION BY dataset, event_pid, event_ts, single_id) AS event_id,\n        FIRST_VALUE(template_id) OVER (\n            PARTITION BY dataset, event_pid, event_ts, single_id\n            ORDER BY CASE WHEN level IN ('ERROR', 'FATAL') THEN 0 ELSE 1 END, id\n            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING\n        ) AS problem_template_id\n    FROM event_keys\n), grouped AS (\n        SELECT m.dataset, m.team, m.template_id, ANY_VALUE(t.template) AS template,\n        \n    COUNT(*) AS n, COUNT(DISTINCT m.event_id) AS ereignisse,\n    COUNT(m.alert) AS alerts,\n    COUNT(DISTINCT NULLIF(NULLIF(NULLIF(TRIM(m.node), 'NULL'), '-'), '')) AS knoten,\n    COUNT(DISTINCT NULLIF(TRIM(m.instance_id), '')) AS vms,\n    COUNT(DISTINCT NULLIF(TRIM(m.request_id), '')) AS requests,\n    ARRAY_AGG(DISTINCT m.component ORDER BY m.component) AS komponenten,\n    MIN(m.id) AS example_log_id, MIN(m.ts) AS erstmals, MAX(m.ts) AS zuletzt\n,\n        ARRAY_AGG(DISTINCT m.problem_template_id ORDER BY m.problem_template_id) AS problem_template_ids\n        FROM marked m LEFT JOIN templates t\n          ON t.dataset = m.dataset AND t.template_id = m.template_id\n        GROUP BY m.dataset, m.team, m.template_id\n    ) SELECT *, SUM(n) OVER () AS logzeilen_passend_gesamt, COUNT(*) OVER () AS _gesamt FROM grouped\n    ORDER BY n DESC, dataset, team, template_id\n     LIMIT 6",
+          "zeilen": 5,
+          "daten": [
+            {
+              "dataset": "BGL",
+              "team": "HPC Kernel",
+              "template_id": "BGL-0019",
+              "template": "data TLB error interrupt",
+              "n": 152734,
+              "ereignisse": 152734,
+              "alerts": 152734,
+              "knoten": 541,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "KERNEL"
+              ],
+              "example_log_id": 17742,
+              "erstmals": "2005-06-05T00:08:13.410695Z",
+              "zuletzt": "2005-11-28T10:01:47.587002Z",
+              "problem_template_ids": [
+                "BGL-0019"
+              ],
+              "logzeilen_passend_gesamt": "626756"
+            },
+            {
+              "dataset": "BGL",
+              "team": "HPC Kernel",
+              "template_id": "BGL-0119",
+              "template": "data storage interrupt",
+              "n": 63491,
+              "ereignisse": 63491,
+              "alerts": 63491,
+              "knoten": 22529,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "KERNEL"
+              ],
+              "example_log_id": 382963,
+              "erstmals": "2005-06-13T17:36:20.973743Z",
+              "zuletzt": "2005-11-22T14:52:43.442135Z",
+              "problem_template_ids": [
+                "BGL-0119"
+              ],
+              "logzeilen_passend_gesamt": "626756"
+            },
+            {
+              "dataset": "BGL",
+              "team": "HPC Kernel",
+              "template_id": "BGL-0020",
+              "template": "instruction address: <HEX>",
+              "n": 47563,
+              "ereignisse": 47563,
+              "alerts": 0,
+              "knoten": 22791,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "KERNEL"
+              ],
+              "example_log_id": 29727,
+              "erstmals": "2005-06-05T00:49:47.926325Z",
+              "zuletzt": "2006-01-03T03:24:46.963349Z",
+              "problem_template_ids": [
+                "BGL-0020"
+              ],
+              "logzeilen_passend_gesamt": "626756"
+            },
+            {
+              "dataset": "BGL",
+              "team": "HPC Kernel",
+              "template_id": "BGL-0122",
+              "template": "program interrupt: <*> <*>",
+              "n": 41065,
+              "ereignisse": 41065,
+              "alerts": 0,
+              "knoten": 6155,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "KERNEL"
+              ],
+              "example_log_id": 481711,
+              "erstmals": "2005-06-14T09:42:53.625883Z",
+              "zuletzt": "2006-01-03T03:24:50.447944Z",
+              "problem_template_ids": [
+                "BGL-0122"
+              ],
+              "logzeilen_passend_gesamt": "626756"
+            },
+            {
+              "dataset": "BGL",
+              "team": "HPC Kernel",
+              "template_id": "BGL-0267",
+              "template": "Lustre mount FAILED : <*> : point <PATH>",
+              "n": 26426,
+              "ereignisse": 26426,
+              "alerts": 26426,
+              "knoten": 1024,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "KERNEL"
+              ],
+              "example_log_id": 3309255,
+              "erstmals": "2005-08-31T18:41:43.225714Z",
+              "zuletzt": "2005-09-16T20:35:26.876154Z",
+              "problem_template_ids": [
+                "BGL-0267"
+              ],
+              "logzeilen_passend_gesamt": "626756"
+            }
+          ],
+          "meta": {
+            "filter": {
+              "team": "HPC Kernel",
+              "dataset": "BGL",
+              "von": null,
+              "bis": null
+            },
+            "gruppen_gesamt": 210,
+            "gekuerzt": true,
+            "limit": 5,
+            "laufzeit_sek": 1.1942784999992,
+            "bereich_laufzeit_sek": 0.39345809999940684,
+            "bereich": {
+              "sql": "WITH scope AS (\n        SELECT l.*, COALESCE(o.team, 'Unassigned') AS team\n        FROM logs l LEFT JOIN ownership o\n          ON o.dataset = l.dataset AND o.component = l.component\n        WHERE l.dataset IN ('BGL', 'OpenStack') AND l.dataset = 'BGL' AND COALESCE(o.team, 'Unassigned') = 'HPC Kernel'\n    ), bounds AS (\n        SELECT dataset, COALESCE(NULL::TIMESTAMPTZ, MIN(ts)) AS von,\n               COALESCE(NULL::TIMESTAMPTZ, MAX(ts)) AS bis\n        FROM scope GROUP BY dataset\n    )\n        SELECT s.dataset, s.team, COUNT(*) AS logzeilen_gesamt,\n               MIN(s.ts) AS erstmals, MAX(s.ts) AS zuletzt,\n               COUNT(*) - COUNT(s.ts) AS ohne_zeitstempel,\n               b.von AS zeitraum_von, b.bis AS zeitraum_bis\n        FROM scope s JOIN bounds b ON b.dataset = s.dataset\n        GROUP BY s.dataset, s.team, b.von, b.bis\n        ORDER BY s.dataset, s.team LIMIT 10001",
+              "zeilen": 1,
+              "daten": [
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Kernel",
+                  "logzeilen_gesamt": 4324967,
+                  "erstmals": "2005-06-03T15:42:50.363779Z",
+                  "zuletzt": "2006-01-04T08:00:05.233639Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                }
+              ],
+              "gekuerzt": false
+            },
+            "level": {
+              "BGL": [
+                "ERROR",
+                "FATAL"
+              ],
+              "OpenStack": [
+                "WARN",
+                "ERROR",
+                "FATAL"
+              ]
+            },
+            "zaehlweise": "n = Logzeilen; ereignisse = BGL-Einzelzeilen bzw. OpenStack-(pid, ts)-Näherung im Filterbereich.",
+            "hinweise": [
+              "OpenStack-Ereignisse sind eine Näherung, keine bestätigten Vorfälle; Template-Zahlen nicht addieren.",
+              "BGL-Ortszeiten wurden beim Import als UTC markiert und werden hier unverändert verwendet.",
+              "Bereichsstatistik umfasst alle Level vor dem Template- und Schweregradfilter.",
+              "Haupt- und Bereichsabfrage laufen getrennt: während der Analyse keine Daten neu laden."
+            ]
+          }
+        },
+        "view": {
+          "truncated": false,
+          "changes": [],
+          "counts": "zeilen and all SQL aggregates retain their original meaning; shown_items describes only this MCP preview.",
+          "resource_scope": "Full tool response, including its own SQL limits/truncation; not an export of the entire database."
+        }
+      },
+      "full_response_bytes": 6654
+    },
+    {
+      "tool": "pattern_trend",
+      "arguments": {
+        "template_id": "BGL-0019",
+        "dataset": "BGL",
+        "intervall": "1 week"
+      },
+      "seconds": 1.123,
+      "resource_roundtrip": true,
+      "response": {
+        "evidence_id": "4bb1f80253473be111b2ccd803869bbcd79f5948556118faa555fff4f1e81d80",
+        "evidence_uri": "evidence://4bb1f80253473be111b2ccd803869bbcd79f5948556118faa555fff4f1e81d80",
+        "tool": "pattern_trend",
+        "arguments": {
+          "von": null,
+          "bis": null,
+          "dataset": "BGL",
+          "team": null,
+          "template_id": "BGL-0019",
+          "intervall": "1 week"
+        },
+        "result": {
+          "sql": "WITH scope AS (\n        SELECT l.*, COALESCE(o.team, 'Unassigned') AS team\n        FROM logs l LEFT JOIN ownership o\n          ON o.dataset = l.dataset AND o.component = l.component\n        WHERE l.dataset IN ('BGL', 'OpenStack') AND l.dataset = 'BGL'\n    ), bounds AS (\n        SELECT dataset, COALESCE(NULL::TIMESTAMPTZ, MIN(ts)) AS von,\n               COALESCE(NULL::TIMESTAMPTZ, MAX(ts)) AS bis\n        FROM scope GROUP BY dataset\n    ), selected AS (\n    SELECT * FROM scope WHERE (dataset = 'BGL' AND level IN ('ERROR', 'FATAL')) OR (dataset = 'OpenStack' AND level IN ('WARN', 'ERROR', 'FATAL'))\n), event_keys AS (\n    SELECT *,\n        CASE WHEN dataset = 'OpenStack' AND pid IS NOT NULL AND ts IS NOT NULL\n             THEN pid END AS event_pid,\n        CASE WHEN dataset = 'OpenStack' AND pid IS NOT NULL AND ts IS NOT NULL\n             THEN ts END AS event_ts,\n        CASE WHEN dataset = 'OpenStack' AND pid IS NOT NULL AND ts IS NOT NULL\n             THEN NULL ELSE id END AS single_id\n    FROM selected\n), marked AS (\n    SELECT *,\n        MIN(id) OVER (PARTITION BY dataset, event_pid, event_ts, single_id) AS event_id,\n        FIRST_VALUE(template_id) OVER (\n            PARTITION BY dataset, event_pid, event_ts, single_id\n            ORDER BY CASE WHEN level IN ('ERROR', 'FATAL') THEN 0 ELSE 1 END, id\n            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING\n        ) AS problem_template_id\n    FROM event_keys\n), settings AS (\n        SELECT '1 week'::INTERVAL AS step\n    ), observed AS (\n        SELECT dataset, time_bucket(step, ts) AS zeit, COUNT(*) AS beobachtete_logs\n        FROM scope CROSS JOIN settings WHERE ts IS NOT NULL\n        GROUP BY dataset, time_bucket(step, ts)\n    ), matching AS (\n        SELECT dataset, time_bucket(step, ts) AS zeit, COUNT(*) AS n,\n               COUNT(DISTINCT event_id) AS ereignisse, COUNT(alert) AS alerts\n        FROM marked CROSS JOIN settings WHERE ts IS NOT NULL\n         AND template_id = 'BGL-0019'\n        GROUP BY dataset, time_bucket(step, ts)\n    ), grid AS (\n        SELECT b.dataset, g.zeit\n        FROM bounds b CROSS JOIN settings\n        CROSS JOIN LATERAL generate_series(\n            time_bucket(step, b.von), time_bucket(step, b.bis), step\n        ) AS g(zeit)\n        WHERE b.von IS NOT NULL AND b.bis IS NOT NULL\n    )\n    SELECT g.dataset, g.zeit,\n           COALESCE(o.beobachtete_logs, 0) AS beobachtete_logs,\n           o.beobachtete_logs IS NULL AS datenluecke,\n           CASE WHEN o.beobachtete_logs IS NOT NULL THEN COALESCE(m.n, 0) END AS n,\n           CASE WHEN o.beobachtete_logs IS NOT NULL THEN COALESCE(m.ereignisse, 0) END AS ereignisse,\n           CASE WHEN o.beobachtete_logs IS NOT NULL THEN COALESCE(m.alerts, 0) END AS alerts,\n           COUNT(*) OVER () AS _gesamt\n    FROM grid g LEFT JOIN observed o ON o.dataset = g.dataset AND o.zeit = g.zeit\n    LEFT JOIN matching m ON m.dataset = g.dataset AND m.zeit = g.zeit\n    ORDER BY g.zeit, g.dataset\n     LIMIT 10001",
+          "zeilen": 32,
+          "daten": [
+            {
+              "dataset": "BGL",
+              "zeit": "2005-05-30T00:00:00Z",
+              "beobachtete_logs": 118846,
+              "datenluecke": false,
+              "n": 477,
+              "ereignisse": 477,
+              "alerts": 477
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-06-06T00:00:00Z",
+              "beobachtete_logs": 259896,
+              "datenluecke": false,
+              "n": 152182,
+              "ereignisse": 152182,
+              "alerts": 152182
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-06-13T00:00:00Z",
+              "beobachtete_logs": 470918,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-06-20T00:00:00Z",
+              "beobachtete_logs": 241306,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-06-27T00:00:00Z",
+              "beobachtete_logs": 356500,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-07-04T00:00:00Z",
+              "beobachtete_logs": 547370,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-07-11T00:00:00Z",
+              "beobachtete_logs": 386165,
+              "datenluecke": false,
+              "n": 1,
+              "ereignisse": 1,
+              "alerts": 1
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-07-18T00:00:00Z",
+              "beobachtete_logs": 344868,
+              "datenluecke": false,
+              "n": 30,
+              "ereignisse": 30,
+              "alerts": 30
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-07-25T00:00:00Z",
+              "beobachtete_logs": 182929,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-08-01T00:00:00Z",
+              "beobachtete_logs": 76947,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-08-08T00:00:00Z",
+              "beobachtete_logs": 61685,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-08-15T00:00:00Z",
+              "beobachtete_logs": 31875,
+              "datenluecke": false,
+              "n": 29,
+              "ereignisse": 29,
+              "alerts": 29
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-08-22T00:00:00Z",
+              "beobachtete_logs": 218949,
+              "datenluecke": false,
+              "n": 4,
+              "ereignisse": 4,
+              "alerts": 4
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-08-29T00:00:00Z",
+              "beobachtete_logs": 40406,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-09-05T00:00:00Z",
+              "beobachtete_logs": 31422,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-09-12T00:00:00Z",
+              "beobachtete_logs": 20091,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-09-19T00:00:00Z",
+              "beobachtete_logs": 117059,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-09-26T00:00:00Z",
+              "beobachtete_logs": 28675,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-10-03T00:00:00Z",
+              "beobachtete_logs": 30216,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-10-10T00:00:00Z",
+              "beobachtete_logs": 39007,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-10-17T00:00:00Z",
+              "beobachtete_logs": 42415,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-10-24T00:00:00Z",
+              "beobachtete_logs": 28428,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-10-31T00:00:00Z",
+              "beobachtete_logs": 372664,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-11-07T00:00:00Z",
+              "beobachtete_logs": 146818,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-11-14T00:00:00Z",
+              "beobachtete_logs": 39803,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-11-21T00:00:00Z",
+              "beobachtete_logs": 66536,
+              "datenluecke": false,
+              "n": 1,
+              "ereignisse": 1,
+              "alerts": 1
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-11-28T00:00:00Z",
+              "beobachtete_logs": 316295,
+              "datenluecke": false,
+              "n": 10,
+              "ereignisse": 10,
+              "alerts": 10
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-12-05T00:00:00Z",
+              "beobachtete_logs": 56834,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-12-12T00:00:00Z",
+              "beobachtete_logs": 21806,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-12-19T00:00:00Z",
+              "beobachtete_logs": 8807,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2005-12-26T00:00:00Z",
+              "beobachtete_logs": 40024,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            },
+            {
+              "dataset": "BGL",
+              "zeit": "2006-01-02T00:00:00Z",
+              "beobachtete_logs": 2403,
+              "datenluecke": false,
+              "n": 0,
+              "ereignisse": 0,
+              "alerts": 0
+            }
+          ],
+          "meta": {
+            "filter": {
+              "template_id": "BGL-0019",
+              "team": null,
+              "dataset": "BGL",
+              "von": null,
+              "bis": null
+            },
+            "gruppen_gesamt": 32,
+            "gekuerzt": false,
+            "limit": 10000,
+            "laufzeit_sek": 0.7260652000004484,
+            "bereich_laufzeit_sek": 0.3852054000017233,
+            "bereich": {
+              "sql": "WITH scope AS (\n        SELECT l.*, COALESCE(o.team, 'Unassigned') AS team\n        FROM logs l LEFT JOIN ownership o\n          ON o.dataset = l.dataset AND o.component = l.component\n        WHERE l.dataset IN ('BGL', 'OpenStack') AND l.dataset = 'BGL'\n    ), bounds AS (\n        SELECT dataset, COALESCE(NULL::TIMESTAMPTZ, MIN(ts)) AS von,\n               COALESCE(NULL::TIMESTAMPTZ, MAX(ts)) AS bis\n        FROM scope GROUP BY dataset\n    )\n        SELECT s.dataset, s.team, COUNT(*) AS logzeilen_gesamt,\n               MIN(s.ts) AS erstmals, MAX(s.ts) AS zuletzt,\n               COUNT(*) - COUNT(s.ts) AS ohne_zeitstempel,\n               b.von AS zeitraum_von, b.bis AS zeitraum_bis\n        FROM scope s JOIN bounds b ON b.dataset = s.dataset\n        GROUP BY s.dataset, s.team, b.von, b.bis\n        ORDER BY s.dataset, s.team LIMIT 10001",
+              "zeilen": 5,
+              "daten": [
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Application Support",
+                  "logzeilen_gesamt": 228536,
+                  "erstmals": "2005-06-03T16:17:40.190183Z",
+                  "zuletzt": "2006-01-03T11:56:38.877831Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                },
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Control System",
+                  "logzeilen_gesamt": 89286,
+                  "erstmals": "2005-06-03T23:42:01.596122Z",
+                  "zuletzt": "2005-12-29T15:28:22.320009Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                },
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Hardware & Interconnect",
+                  "logzeilen_gesamt": 103493,
+                  "erstmals": "2005-06-03T15:47:20.852959Z",
+                  "zuletzt": "2005-12-29T16:20:57.380145Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                },
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Kernel",
+                  "logzeilen_gesamt": 4324967,
+                  "erstmals": "2005-06-03T15:42:50.363779Z",
+                  "zuletzt": "2006-01-04T08:00:05.233639Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                },
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Operations",
+                  "logzeilen_gesamt": 1681,
+                  "erstmals": "2005-07-29T08:01:12.850473Z",
+                  "zuletzt": "2005-11-18T08:28:06.330682Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                }
+              ],
+              "gekuerzt": false
+            },
+            "level": {
+              "BGL": [
+                "ERROR",
+                "FATAL"
+              ],
+              "OpenStack": [
+                "WARN",
+                "ERROR",
+                "FATAL"
+              ]
+            },
+            "zaehlweise": "n = Logzeilen; ereignisse = BGL-Einzelzeilen bzw. OpenStack-(pid, ts)-Näherung im Filterbereich.",
+            "hinweise": [
+              "OpenStack-Ereignisse sind eine Näherung, keine bestätigten Vorfälle; Template-Zahlen nicht addieren.",
+              "BGL-Ortszeiten wurden beim Import als UTC markiert und werden hier unverändert verwendet.",
+              "Bereichsstatistik umfasst alle Level vor dem Template- und Schweregradfilter.",
+              "Haupt- und Bereichsabfrage laufen getrennt: während der Analyse keine Daten neu laden."
+            ],
+            "intervall": "1 week"
+          }
+        },
+        "view": {
+          "truncated": false,
+          "changes": [],
+          "counts": "zeilen and all SQL aggregates retain their original meaning; shown_items describes only this MCP preview.",
+          "resource_scope": "Full tool response, including its own SQL limits/truncation; not an export of the entire database."
+        }
+      },
+      "full_response_bytes": 10563
+    },
+    {
+      "tool": "priority_ranking",
+      "arguments": {
+        "dataset": "BGL",
+        "group_by": "template",
+        "limit": 5
+      },
+      "seconds": 2.598,
+      "resource_roundtrip": true,
+      "response": {
+        "evidence_id": "7ea4a8009ec7c8c35ebcdaf0dd411951ef4548cbf23161d1a60f544ea8c0018d",
+        "evidence_uri": "evidence://7ea4a8009ec7c8c35ebcdaf0dd411951ef4548cbf23161d1a60f544ea8c0018d",
+        "tool": "priority_ranking",
+        "arguments": {
+          "von": null,
+          "bis": null,
+          "dataset": "BGL",
+          "team": null,
+          "group_by": "template",
+          "limit": 5
+        },
+        "result": {
+          "sql": "WITH scope AS (\n        SELECT l.*, COALESCE(o.team, 'Unassigned') AS team\n        FROM logs l LEFT JOIN ownership o\n          ON o.dataset = l.dataset AND o.component = l.component\n        WHERE l.dataset IN ('BGL', 'OpenStack') AND l.dataset = 'BGL'\n    ), bounds AS (\n        SELECT dataset, COALESCE(NULL::TIMESTAMPTZ, MIN(ts)) AS von,\n               COALESCE(NULL::TIMESTAMPTZ, MAX(ts)) AS bis\n        FROM scope GROUP BY dataset\n    ), selected AS (\n    SELECT * FROM scope WHERE (dataset = 'BGL' AND level IN ('ERROR', 'FATAL')) OR (dataset = 'OpenStack' AND level IN ('WARN', 'ERROR', 'FATAL'))\n), event_keys AS (\n    SELECT *,\n        CASE WHEN dataset = 'OpenStack' AND pid IS NOT NULL AND ts IS NOT NULL\n             THEN pid END AS event_pid,\n        CASE WHEN dataset = 'OpenStack' AND pid IS NOT NULL AND ts IS NOT NULL\n             THEN ts END AS event_ts,\n        CASE WHEN dataset = 'OpenStack' AND pid IS NOT NULL AND ts IS NOT NULL\n             THEN NULL ELSE id END AS single_id\n    FROM selected\n), marked AS (\n    SELECT *,\n        MIN(id) OVER (PARTITION BY dataset, event_pid, event_ts, single_id) AS event_id,\n        FIRST_VALUE(template_id) OVER (\n            PARTITION BY dataset, event_pid, event_ts, single_id\n            ORDER BY CASE WHEN level IN ('ERROR', 'FATAL') THEN 0 ELSE 1 END, id\n            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING\n        ) AS problem_template_id\n    FROM event_keys\n), grouped AS (\n        SELECT m.dataset, m.problem_template_id AS gruppe,\n               ARRAY_AGG(DISTINCT m.team ORDER BY m.team) AS teams,\n               ARRAY_AGG(DISTINCT m.template_id ORDER BY m.template_id) AS template_ids,\n               \n    COUNT(*) AS n, COUNT(DISTINCT m.event_id) AS ereignisse,\n    COUNT(m.alert) AS alerts,\n    COUNT(DISTINCT NULLIF(NULLIF(NULLIF(TRIM(m.node), 'NULL'), '-'), '')) AS knoten,\n    COUNT(DISTINCT NULLIF(TRIM(m.instance_id), '')) AS vms,\n    COUNT(DISTINCT NULLIF(TRIM(m.request_id), '')) AS requests,\n    ARRAY_AGG(DISTINCT m.component ORDER BY m.component) AS komponenten,\n    MIN(m.id) AS example_log_id, MIN(m.ts) AS erstmals, MAX(m.ts) AS zuletzt\n,\n               MAX(CASE m.level WHEN 'FATAL' THEN 3 WHEN 'ERROR' THEN 2 ELSE 1 END) AS schweregrad,\n               b.von, b.bis,\n               COUNT(DISTINCT CASE WHEN m.ts < b.von + (b.bis - b.von) / 2 THEN m.event_id END) AS erste_haelfte,\n               COUNT(DISTINCT CASE WHEN m.ts >= b.von + (b.bis - b.von) / 2 THEN m.event_id END) AS zweite_haelfte,\n               COUNT(*) - COUNT(m.ts) AS ohne_zeitstempel\n        FROM marked m JOIN bounds b ON b.dataset = m.dataset\n        GROUP BY m.dataset, m.problem_template_id, b.von, b.bis\n    ), measured AS (\n        SELECT *, CASE WHEN dataset = 'BGL' THEN n ELSE ereignisse END AS haeufigkeit,\n               CASE WHEN dataset = 'BGL' AND knoten > 0 THEN 'knoten'\n                    WHEN dataset = 'OpenStack' AND vms > 0 THEN 'vms'\n                    WHEN dataset = 'OpenStack' AND requests > 0 THEN 'requests'\n                    ELSE 'unbekannt' END AS reichweite_typ,\n               CASE WHEN dataset = 'BGL' THEN NULLIF(knoten, 0)\n                    WHEN vms > 0 THEN vms ELSE NULLIF(requests, 0) END AS reichweite,\n               CASE WHEN von IS NULL OR von = bis OR ohne_zeitstempel > 0 THEN 1.0\n                    ELSE 1.0 + GREATEST(-0.5, LEAST(0.5,\n                         (zweite_haelfte - erste_haelfte) * 1.0 / NULLIF(ereignisse, 0))) END AS trendfaktor,\n               CASE WHEN dataset = 'BGL' THEN 1.0 + alerts * 1.0 / NULLIF(n, 0)\n                    ELSE 1.0 END AS alertfaktor,\n               CASE WHEN von IS NULL OR von = bis OR ohne_zeitstempel > 0\n                    THEN 'neutral: Zeitraum fehlt, hat keine Ausdehnung oder Zeitstempel fehlen'\n                    ELSE 'Vergleich zweier gleich langer Kalenderzeiträume; Datenlücken können den Trend beeinflussen'\n               END AS trend_hinweis\n        FROM grouped\n    ), normalized AS (\n        SELECT *, MAX(haeufigkeit) OVER (PARTITION BY dataset, reichweite_typ) AS max_haeufigkeit,\n               MAX(reichweite) OVER (PARTITION BY dataset, reichweite_typ) AS max_reichweite,\n               haeufigkeit * 1.0 / NULLIF(MAX(haeufigkeit) OVER (PARTITION BY dataset, reichweite_typ), 0) AS haeufigkeit_norm,\n               reichweite * 1.0 / NULLIF(MAX(reichweite) OVER (PARTITION BY dataset, reichweite_typ), 0) AS reichweite_norm\n        FROM measured\n    ), scored AS (\n        SELECT *, haeufigkeit_norm * schweregrad * reichweite_norm * trendfaktor * alertfaktor AS score,\n               dataset || ':' || reichweite_typ AS vergleichsgruppe,\n               CASE WHEN reichweite IS NULL THEN 'nicht bewertbar' ELSE 'bewertbar' END AS status\n        FROM normalized\n    )\n    SELECT *,\n           CASE WHEN score IS NOT NULL THEN ROW_NUMBER() OVER (\n               PARTITION BY dataset, reichweite_typ ORDER BY score DESC NULLS LAST, gruppe\n           ) END AS rang,\n           COUNT(*) OVER () AS _gesamt,\n           SUM(CASE WHEN score IS NULL THEN 1 ELSE 0 END) OVER () AS nicht_bewertbar_gesamt\n    FROM scored ORDER BY dataset, CASE WHEN score IS NULL THEN 1 ELSE 0 END,\n                         reichweite_typ, score DESC NULLS LAST, gruppe\n     LIMIT 6",
+          "zeilen": 5,
+          "daten": [
+            {
+              "dataset": "BGL",
+              "gruppe": "BGL-0119",
+              "teams": [
+                "HPC Kernel"
+              ],
+              "template_ids": [
+                "BGL-0119"
+              ],
+              "n": 63491,
+              "ereignisse": 63491,
+              "alerts": 63491,
+              "knoten": 22529,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "KERNEL"
+              ],
+              "example_log_id": 382963,
+              "erstmals": "2005-06-13T17:36:20.973743Z",
+              "zuletzt": "2005-11-22T14:52:43.442135Z",
+              "schweregrad": 3,
+              "von": "2005-06-03T15:42:50.363779Z",
+              "bis": "2006-01-04T08:00:05.233639Z",
+              "erste_haelfte": 63488,
+              "zweite_haelfte": 3,
+              "ohne_zeitstempel": 0,
+              "haeufigkeit": 63491,
+              "reichweite_typ": "knoten",
+              "reichweite": 22529,
+              "trendfaktor": 0.5,
+              "alertfaktor": 2.0,
+              "trend_hinweis": "Vergleich zweier gleich langer Kalenderzeiträume; Datenlücken können den Trend beeinflussen",
+              "max_haeufigkeit": 152734,
+              "max_reichweite": 22791,
+              "haeufigkeit_norm": 0.4156965705082038,
+              "reichweite_norm": 0.9885042341275064,
+              "score": 1.232753460178929,
+              "vergleichsgruppe": "BGL:knoten",
+              "status": "bewertbar",
+              "rang": 1,
+              "nicht_bewertbar_gesamt": "12"
+            },
+            {
+              "dataset": "BGL",
+              "gruppe": "BGL-0020",
+              "teams": [
+                "HPC Kernel"
+              ],
+              "template_ids": [
+                "BGL-0020"
+              ],
+              "n": 47563,
+              "ereignisse": 47563,
+              "alerts": 0,
+              "knoten": 22791,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "KERNEL"
+              ],
+              "example_log_id": 29727,
+              "erstmals": "2005-06-05T00:49:47.926325Z",
+              "zuletzt": "2006-01-03T03:24:46.963349Z",
+              "schweregrad": 3,
+              "von": "2005-06-03T15:42:50.363779Z",
+              "bis": "2006-01-04T08:00:05.233639Z",
+              "erste_haelfte": 47385,
+              "zweite_haelfte": 178,
+              "ohne_zeitstempel": 0,
+              "haeufigkeit": 47563,
+              "reichweite_typ": "knoten",
+              "reichweite": 22791,
+              "trendfaktor": 0.5,
+              "alertfaktor": 1.0,
+              "trend_hinweis": "Vergleich zweier gleich langer Kalenderzeiträume; Datenlücken können den Trend beeinflussen",
+              "max_haeufigkeit": 152734,
+              "max_reichweite": 22791,
+              "haeufigkeit_norm": 0.31141068786255843,
+              "reichweite_norm": 1.0,
+              "score": 0.46711603179383765,
+              "vergleichsgruppe": "BGL:knoten",
+              "status": "bewertbar",
+              "rang": 2,
+              "nicht_bewertbar_gesamt": "12"
+            },
+            {
+              "dataset": "BGL",
+              "gruppe": "BGL-0258",
+              "teams": [
+                "HPC Kernel"
+              ],
+              "template_ids": [
+                "BGL-0258"
+              ],
+              "n": 18587,
+              "ereignisse": 18587,
+              "alerts": 18587,
+              "knoten": 7650,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "KERNEL"
+              ],
+              "example_log_id": 3044926,
+              "erstmals": "2005-08-13T21:27:41.205332Z",
+              "zuletzt": "2005-11-16T12:37:18.653547Z",
+              "schweregrad": 3,
+              "von": "2005-06-03T15:42:50.363779Z",
+              "bis": "2006-01-04T08:00:05.233639Z",
+              "erste_haelfte": 11924,
+              "zweite_haelfte": 6663,
+              "ohne_zeitstempel": 0,
+              "haeufigkeit": 18587,
+              "reichweite_typ": "knoten",
+              "reichweite": 7650,
+              "trendfaktor": 0.7169527088825522,
+              "alertfaktor": 2.0,
+              "trend_hinweis": "Vergleich zweier gleich langer Kalenderzeiträume; Datenlücken können den Trend beeinflussen",
+              "max_haeufigkeit": 152734,
+              "max_reichweite": 22791,
+              "haeufigkeit_norm": 0.12169523485275054,
+              "reichweite_norm": 0.33565881268921943,
+              "score": 0.17571684122316725,
+              "vergleichsgruppe": "BGL:knoten",
+              "status": "bewertbar",
+              "rang": 3,
+              "nicht_bewertbar_gesamt": "12"
+            },
+            {
+              "dataset": "BGL",
+              "gruppe": "BGL-0122",
+              "teams": [
+                "HPC Kernel"
+              ],
+              "template_ids": [
+                "BGL-0122"
+              ],
+              "n": 41065,
+              "ereignisse": 41065,
+              "alerts": 0,
+              "knoten": 6155,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "KERNEL"
+              ],
+              "example_log_id": 481711,
+              "erstmals": "2005-06-14T09:42:53.625883Z",
+              "zuletzt": "2006-01-03T03:24:50.447944Z",
+              "schweregrad": 3,
+              "von": "2005-06-03T15:42:50.363779Z",
+              "bis": "2006-01-04T08:00:05.233639Z",
+              "erste_haelfte": 40978,
+              "zweite_haelfte": 87,
+              "ohne_zeitstempel": 0,
+              "haeufigkeit": 41065,
+              "reichweite_typ": "knoten",
+              "reichweite": 6155,
+              "trendfaktor": 0.5,
+              "alertfaktor": 1.0,
+              "trend_hinweis": "Vergleich zweier gleich langer Kalenderzeiträume; Datenlücken können den Trend beeinflussen",
+              "max_haeufigkeit": 152734,
+              "max_reichweite": 22791,
+              "haeufigkeit_norm": 0.2688661332774628,
+              "reichweite_norm": 0.27006274406563996,
+              "score": 0.10891608860884451,
+              "vergleichsgruppe": "BGL:knoten",
+              "status": "bewertbar",
+              "rang": 4,
+              "nicht_bewertbar_gesamt": "12"
+            },
+            {
+              "dataset": "BGL",
+              "gruppe": "BGL-0352",
+              "teams": [
+                "HPC Application Support"
+              ],
+              "template_ids": [
+                "BGL-0352"
+              ],
+              "n": 28802,
+              "ereignisse": 28802,
+              "alerts": 28802,
+              "knoten": 1024,
+              "vms": 0,
+              "requests": 0,
+              "komponenten": [
+                "APP"
+              ],
+              "example_log_id": 4215995,
+              "erstmals": "2005-11-17T05:33:24.623263Z",
+              "zuletzt": "2006-01-03T11:56:38.877831Z",
+              "schweregrad": 3,
+              "von": "2005-06-03T15:42:50.363779Z",
+              "bis": "2006-01-04T08:00:05.233639Z",
+              "erste_haelfte": 0,
+              "zweite_haelfte": 28802,
+              "ohne_zeitstempel": 0,
+              "haeufigkeit": 28802,
+              "reichweite_typ": "knoten",
+              "reichweite": 1024,
+              "trendfaktor": 1.5,
+              "alertfaktor": 2.0,
+              "trend_hinweis": "Vergleich zweier gleich langer Kalenderzeiträume; Datenlücken können den Trend beeinflussen",
+              "max_haeufigkeit": 152734,
+              "max_reichweite": 22791,
+              "haeufigkeit_norm": 0.18857621747613498,
+              "reichweite_norm": 0.04493001623447852,
+              "score": 0.07625459261375368,
+              "vergleichsgruppe": "BGL:knoten",
+              "status": "bewertbar",
+              "rang": 5,
+              "nicht_bewertbar_gesamt": "12"
+            }
+          ],
+          "meta": {
+            "filter": {
+              "group_by": "template",
+              "dataset": "BGL",
+              "team": null,
+              "von": null,
+              "bis": null
+            },
+            "gruppen_gesamt": 299,
+            "gekuerzt": true,
+            "limit": 5,
+            "laufzeit_sek": 2.3008794999987003,
+            "bereich_laufzeit_sek": 0.2853681000015058,
+            "bereich": {
+              "sql": "WITH scope AS (\n        SELECT l.*, COALESCE(o.team, 'Unassigned') AS team\n        FROM logs l LEFT JOIN ownership o\n          ON o.dataset = l.dataset AND o.component = l.component\n        WHERE l.dataset IN ('BGL', 'OpenStack') AND l.dataset = 'BGL'\n    ), bounds AS (\n        SELECT dataset, COALESCE(NULL::TIMESTAMPTZ, MIN(ts)) AS von,\n               COALESCE(NULL::TIMESTAMPTZ, MAX(ts)) AS bis\n        FROM scope GROUP BY dataset\n    )\n        SELECT s.dataset, s.team, COUNT(*) AS logzeilen_gesamt,\n               MIN(s.ts) AS erstmals, MAX(s.ts) AS zuletzt,\n               COUNT(*) - COUNT(s.ts) AS ohne_zeitstempel,\n               b.von AS zeitraum_von, b.bis AS zeitraum_bis\n        FROM scope s JOIN bounds b ON b.dataset = s.dataset\n        GROUP BY s.dataset, s.team, b.von, b.bis\n        ORDER BY s.dataset, s.team LIMIT 10001",
+              "zeilen": 5,
+              "daten": [
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Application Support",
+                  "logzeilen_gesamt": 228536,
+                  "erstmals": "2005-06-03T16:17:40.190183Z",
+                  "zuletzt": "2006-01-03T11:56:38.877831Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                },
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Control System",
+                  "logzeilen_gesamt": 89286,
+                  "erstmals": "2005-06-03T23:42:01.596122Z",
+                  "zuletzt": "2005-12-29T15:28:22.320009Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                },
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Hardware & Interconnect",
+                  "logzeilen_gesamt": 103493,
+                  "erstmals": "2005-06-03T15:47:20.852959Z",
+                  "zuletzt": "2005-12-29T16:20:57.380145Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                },
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Kernel",
+                  "logzeilen_gesamt": 4324967,
+                  "erstmals": "2005-06-03T15:42:50.363779Z",
+                  "zuletzt": "2006-01-04T08:00:05.233639Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                },
+                {
+                  "dataset": "BGL",
+                  "team": "HPC Operations",
+                  "logzeilen_gesamt": 1681,
+                  "erstmals": "2005-07-29T08:01:12.850473Z",
+                  "zuletzt": "2005-11-18T08:28:06.330682Z",
+                  "ohne_zeitstempel": 0,
+                  "zeitraum_von": "2005-06-03T15:42:50.363779Z",
+                  "zeitraum_bis": "2006-01-04T08:00:05.233639Z"
+                }
+              ],
+              "gekuerzt": false
+            },
+            "level": {
+              "BGL": [
+                "ERROR",
+                "FATAL"
+              ],
+              "OpenStack": [
+                "WARN",
+                "ERROR",
+                "FATAL"
+              ]
+            },
+            "zaehlweise": "n = Logzeilen; ereignisse = BGL-Einzelzeilen bzw. OpenStack-(pid, ts)-Näherung im Filterbereich.",
+            "hinweise": [
+              "OpenStack-Ereignisse sind eine Näherung, keine bestätigten Vorfälle; Template-Zahlen nicht addieren.",
+              "BGL-Ortszeiten wurden beim Import als UTC markiert und werden hier unverändert verwendet.",
+              "Bereichsstatistik umfasst alle Level vor dem Template- und Schweregradfilter.",
+              "Haupt- und Bereichsabfrage laufen getrennt: während der Analyse keine Daten neu laden."
+            ],
+            "score_formel": "haeufigkeit_norm * schweregrad * reichweite_norm * trendfaktor * alertfaktor",
+            "vergleich": "Ränge gelten nur innerhalb derselben vergleichsgruppe; kein globaler Rang."
+          }
+        },
+        "view": {
+          "truncated": false,
+          "changes": [],
+          "counts": "zeilen and all SQL aggregates retain their original meaning; shown_items describes only this MCP preview.",
+          "resource_scope": "Full tool response, including its own SQL limits/truncation; not an export of the entire database."
+        }
+      },
+      "full_response_bytes": 13437
+    }
+  ],
+  "protocol_version": "2026-07-28",
+  "discovered_tools": [
+    "search_logs",
+    "get_context",
+    "vm_dauer",
+    "top_patterns",
+    "pattern_trend",
+    "priority_ranking",
+    "corpus_overview"
+  ],
+  "prompts": [
+    "engineer_investigation",
+    "team_lead_review",
+    "manager_priorities"
+  ],
+  "corpus_counts": {
+    "BGL": 4747963,
+    "OpenStack": 207820
+  },
+  "regressions": {
+    "full_text_count": 152734,
+    "selected_spawn_seconds": 41.81,
+    "spawn_median_seconds": 19.7,
+    "spawn_rank": 2,
+    "spawn_observations": 2066,
+    "highest_bgl_priority": "BGL-0119",
+    "traceback_context_includes_cause": true,
+    "traceback_evidence_uri": "evidence://08cc9d943aac2d0c49566ec12eb36776d2fa176a9ed9af91a9657aece2b7af9d",
+    "traceback_sql": "SELECT l.id, l.ts, l.dataset, l.level, l.component, l.service, l.node, l.pid,\n        l.request_id, l.instance_id, l.template_id, l.alert, l.message\n        FROM logs l JOIN logs s ON s.id=4793576 WHERE l.dataset='OpenStack' AND (l.request_id=s.request_id OR (l.pid=s.pid AND l.ts=s.ts))\n        ORDER BY CASE WHEN l.id=s.id THEN 0 WHEN l.dataset='OpenStack' AND (l.pid=s.pid AND l.ts=s.ts) THEN 1 ELSE 2 END,\n                 ABS(EXTRACT(EPOCH FROM (l.ts-s.ts))) NULLS LAST, l.id LIMIT 31",
+    "traceback_event": {
+      "pid": 2931,
+      "ts": "2017-05-16 03:19:45.356000+00:00",
+      "zeilen_im_ergebnis": 24,
+      "regel": "Lines sharing (pid, ts) with the anchor, e.g. a multi-line traceback."
+    },
+    "traceback_cause_rows": [
+      {
+        "id": 4793594,
+        "ts": "2017-05-16 03:19:45.356000+00:00",
+        "dataset": "OpenStack",
+        "level": "ERROR",
+        "component": "oslo_service.periodic_task",
+        "service": "nova-compute",
+        "node": null,
+        "pid": 2931,
+        "request_id": null,
+        "instance_id": null,
+        "template_id": "OS-0063",
+        "alert": null,
+        "message": "InvalidDiskInfo: Disk info file is invalid: qemu-img failed to execute on /var/lib/nova/instances/16797a0f-32fb-494c-8f36-38588148c35d/disk : Unexpected error while running command."
+      },
+      {
+        "id": 4793598,
+        "ts": "2017-05-16 03:19:45.356000+00:00",
+        "dataset": "OpenStack",
+        "level": "ERROR",
+        "component": "oslo_service.periodic_task",
+        "service": "nova-compute",
+        "node": null,
+        "pid": 2931,
+        "request_id": null,
+        "instance_id": null,
+        "template_id": "OS-0067",
+        "alert": null,
+        "message": "Stderr: u\"qemu-img: Could not open '/var/lib/nova/instances/16797a0f-32fb-494c-8f36-38588148c35d/disk': Could not open '/var/lib/nova/instances/16797a0f-32fb-494c-8f36-38588148c35d/disk': No such file or directory\\n\""
+      }
+    ]
+  },
+  "invalid_limit_rejected": true,
+  "status": "passed"
+}
