@@ -28,7 +28,7 @@ flowchart TB
     subgraph TOOLS["02 · READ-ONLY PYTHON TOOLS"]
         direction LR
         ENG["Engineer tools<br/>Full-text search · event context<br/>VM spawn-duration comparison"]
-        ANALYTICS["ANALYTICS · GHAZAL / PERSON 3<br/>Recurring patterns · historical trends<br/>Problem and team prioritization<br/>tools/analytics.py"]
+        ANALYTICS["ANALYTICS<br/>Recurring patterns · historical trends<br/>Problem and team prioritization<br/>tools/analytics.py"]
         VISUALS["Visualization queries<br/>Search distribution<br/>Period comparisons"]
     end
 
@@ -66,7 +66,7 @@ flowchart TB
     style ACCESS fill:#FFFFFF,stroke:#CBD5E1,color:#475569
 ```
 
-**Blue highlight: Ghazal's Analytics work (Person 3).** It turns the full filtered
+**Analytics (blue)** turns the full filtered
 log corpus into recurring-pattern counts, historical trends, and transparent
 priority scores for Team Leads and Managers through `top_patterns`,
 `pattern_trend`, and `priority_ranking`. See [Analytics documentation](ANALYTICS.md).
@@ -236,12 +236,12 @@ The agent chooses these tools from their descriptions; it does not generate
 arbitrary SQL. `search_distribution` and `period_comparison` reuse the same
 query conventions for direct UI charts.
 
-## OpenAI agent development (Kardo, Person 4)
+## OpenAI agent development
 
 The agent uses the official OpenAI Python SDK and the Responses API.
-The interface used by Omar's UI remains `antworte(rolle, team, frage, verlauf)`,
+The interface used by the UI is `antworte(rolle, team, frage, verlauf)`,
 returning `{"text": str, "belege": list}`; `meta` also reports status and usage.
-All three roles and all six database tools from Persons 2 and 3 are connected.
+All three roles and all six search and analytics tools are connected.
 Real investigations require a running local SereneDB loaded with both datasets.
 For startup, tests and interfaces, see [agent/README.md](agent/README.md).
 
@@ -266,7 +266,7 @@ Use the jury quick-start above for the complete installation and load workflow.
 
 SereneDB documentation MCP for coding assistants: `claude mcp add --transport http serenedb-docs https://api.serenedb.com/mcp`
 
-## Log Observatory UI (Person 5)
+## Log Observatory UI
 
 From the repository root, after installing requirements and loading the database:
 
@@ -304,7 +304,7 @@ exceptions are disclosed beside the results. Log lines and `(pid, ts)` event
 approximations are not confirmed incident counts. Scores are heuristics, not
 measured customer impact. BGL timestamp conventions remain unchanged.
 
-### Integrated OpenAI agent (Persons 4 and 5)
+### Integrated OpenAI agent
 
 `agent/agent.py` now implements the existing interface, extended with optional UI settings:
 
@@ -319,7 +319,7 @@ def antworte(rolle: str, team: str | None, frage: str, verlauf: list,
     ]}
 ```
 
-Person 4 returns raw evidence with `beleg_id`, `tool`, `parameter`, `sql`, `daten`
+The agent returns raw evidence with `beleg_id`, `tool`, `parameter`, `sql`, `daten`
 and completeness metadata. The UI retains those fields, supporting queries,
 status and usage, and accepts the wrapped example above for compatibility.
 The UI requests `language="en"` and supplies the historical `scope` explicitly.
@@ -369,7 +369,6 @@ SereneDB instance before the final demo.
 
 ### Local integration acceptance, 17 October 2026
 
-- Integrated main commit `88df103` (Person 4's OpenAI agent) on `feat/ui`.
 - Full official public corpus loaded: 4,747,963 BGL + 207,820 OpenStack rows;
   399 + 71 templates, zero unparsed rows and complete ownership mapping.
 - The initial 69 regression tests passed with the real database fixtures enabled.
