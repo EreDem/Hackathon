@@ -399,63 +399,6 @@ statuses preserve evidence and show English diagnostics instead of a successful
 answer. The UI displays evidence IDs, model-view truncation, token usage and
 estimated cost. Direct exploration remains available without a model key.
 
-### Five-minute demo
-
-1. **0:00–0:40:** show scope and the query-evidence contract.
-2. **0:40–2:00:** Engineer/BGL: run the prepared search, select a hit, inspect the
-   event lens and SQL. Discuss observations separately from possible causes.
-3. **2:00–3:10:** Team Lead/HPC Kernel: analyze patterns, change the selected
-   pattern, and show the trend and its observation gaps.
-4. **3:10–4:20:** Manager/BGL: compare frequency with reach, open score factors,
-   then investigate supporting logs.
-5. **4:20–5:00:** when the OpenAI key is configured, ask a prepared role-specific
-   question and show its executed evidence; download the investigation JSON.
-
-For the challenge submission, complete the agent-backed three-role demonstration;
-direct exploration alone does not demonstrate agent tool selection.
-
-### UI and tool checks
-
-Run the commands from [5. Verify independently](#5-verify-independently);
-`python -m tests.check_ui_real --live` additionally runs three paid agent
-investigations.
-
-UI tests use explicitly synthetic fixtures from `tests/ui_fixtures.py`; these
-are never imported by the production app. They cover role/scope changes,
-drill-downs, unavailable services, chart gaps, comparison groups, and query reuse.
-Engineer regression tests cover full search totals, evidence retention, bounded
-context and partial failures. New SQL must still be verified against the provided
-SereneDB instance before the final demo.
-
-### Local integration acceptance, 17 October 2026
-
-- Full official public corpus loaded: 4,747,963 BGL + 207,820 OpenStack rows;
-  399 + 71 templates, zero unparsed rows and complete ownership mapping.
-- The initial 69 regression tests passed with the real database fixtures enabled.
-  The six-tool real-corpus check and full analytics acceptance also pass.
-- Three English UI investigations completed with status `ok`, executed query
-  evidence and role-specific answers. Combined conservative API estimate: $0.18583
-  for this run. Future investigations incur their own usage.
-- Local evidence is saved in ignored `out/agent-validation.json`,
-  `out/analytics-validation.json` and `out/ui-validation.json`.
-- This checkout retains password authentication. The approved `log_observatory`
-  login has only SELECT on the three challenge tables plus schema usage; its
-  connection string and the model key live in ignored `.env`. No broad trust
-  rule was applied. `.env.example` contains no key.
-
-For a reload with this read-only app configuration, use the container's local
-administrative connection rather than the app login:
-
-```powershell
-docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -v ON_ERROR_STOP=1 -f /data/ingest/load.sql
-# load.sql recreates tables, so restore this local app's SELECT grants afterward:
-docker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -v ON_ERROR_STOP=1 -c "GRANT SELECT ON logs TO log_observatory; GRANT SELECT ON templates TO log_observatory; GRANT SELECT ON ownership TO log_observatory;"
-```
-
-Dataset attribution: Zhu et al., *Loghub: A Large Collection of System Log
-Datasets for AI-driven Log Analytics*, ISSRE 2023; BGL additionally Oliner &
-Stearley, DSN 2007. Data came from the challenge's public Zenodo record 8196385.
-
 ## Role-specific visual exploration
 
 All views work without model calls. Use the action buttons to run SQL; chart
