@@ -46,7 +46,7 @@ The initial login helper tried `GRANT SELECT ON logs, templates, ownership ...`.
 
 ## Reproduce
 
-Follow the README jury quick-start in a new checkout with Python 3.12 and Docker Desktop. Run the loader only against a fresh challenge database: it recreates the three tables. Create the read-only login after loading, then run the regression, analytics and UI commands shown there. The later technical guidance provides no shared instance or loader; use the repository's local Docker and ingestion workflow.
+Follow the README jury quick-start in a new checkout with Python 3.12 and Docker Desktop. Run the loader only against a fresh challenge database: it recreates the three tables. Create the read-only login after loading, then run the regression, analytics and UI commands shown there. For an organiser-provided instance, use its loader and connection details instead of the local Docker/bootstrap steps.
 
 ## Limits of this result
 
