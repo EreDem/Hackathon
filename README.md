@@ -1,8 +1,85 @@
 # Making Sense of Logs – schubKI National AI Hackathon 2026 (Challenge 04, SereneDB)
 
-Prototyp, der Log-Daten (BGL + OpenStack) in Antworten für drei Rollen verwandelt:
-**Engineer** (Ursache eines Fehlers), **Team Lead** (wiederkehrende Probleme im Team), **Manager** (Priorisierung).
-Ablauf: **Frage → Belege (SereneDB) → Empfehlung (KI-Agent)**. Leitprinzip: SQL rechnet, das LLM erklärt.
+A prototype that turns BGL and OpenStack logs into evidence-based answers for
+three roles: **Engineer** (investigate errors), **Team Lead** (understand recurring
+problems), and **Manager** (prioritize investigations).
+
+**Question → Evidence → Recommendation. SQL calculates; the AI explains.**
+
+## System architecture
+
+The pipeline prepares the logs once. At investigation time, SereneDB searches and
+aggregates the selected data, and Python tools return bounded, verifiable evidence.
+The same tools support direct dashboard exploration and model-led investigations.
+
+```mermaid
+flowchart TB
+    subgraph INGEST["01 · DATA PREPARATION"]
+        direction LR
+        RAW["BGL + OpenStack<br/>Public raw log files"]
+        PREP["Python + Drain3<br/>Parse logs · extract templates"]
+        PARQUET["Parquet files<br/>Structured logs + templates"]
+        RAW --> PREP --> PARQUET
+    end
+
+    DB[("SereneDB · Docker<br/>logs · templates · ownership<br/>Full-text index + SQL aggregations")]
+    PARQUET -->|"Load with SQL"| DB
+
+    subgraph TOOLS["02 · READ-ONLY PYTHON TOOLS"]
+        direction LR
+        ENG["Engineer tools<br/>Full-text search · event context<br/>VM spawn-duration comparison"]
+        ANALYTICS["ANALYTICS · GHAZAL / PERSON 3<br/>Recurring patterns · historical trends<br/>Problem and team prioritization<br/>tools/analytics.py"]
+        VISUALS["Visualization queries<br/>Search distribution<br/>Period comparisons"]
+    end
+
+    DB --> ENG
+    DB --> ANALYTICS
+    DB --> VISUALS
+    ENG --> EVIDENCE
+    ANALYTICS --> EVIDENCE
+    EVIDENCE["Evidence contract<br/>Executed SQL + result rows<br/>Scope · score factors · completeness"]
+
+    subgraph ACCESS["03 · EXPLORE AND EXPLAIN"]
+        direction LR
+        UI["Streamlit dashboard<br/>Engineer · Team Lead · Manager<br/>Charts + inspectable query evidence"]
+        AGENT["OpenAI agent<br/>Select tools · explain findings<br/>Recommend the next check"]
+        MCP["Local MCP server<br/>Shared tools + corpus overview<br/>Retrievable SQL evidence"]
+    end
+
+    VISUALS --> UI
+    EVIDENCE --> UI
+    EVIDENCE --> AGENT
+    EVIDENCE --> MCP
+    AGENT -->|"Evidence-based answers"| UI
+    MCP -->|"Local stdio connection"| HOST["Claude / MCP host<br/>Uses its own model"]
+
+    classDef neutral fill:#F8FAFC,stroke:#94A3B8,color:#0F172A,stroke-width:1px;
+    classDef database fill:#F1F5F9,stroke:#475569,color:#0F172A,stroke-width:2px;
+    classDef analytics fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:3px;
+    classDef evidence fill:#F0FDF4,stroke:#16A34A,color:#14532D,stroke-width:2px;
+    class RAW,PREP,PARQUET,ENG,VISUALS,UI,AGENT,MCP,HOST neutral;
+    class DB database;
+    class ANALYTICS analytics;
+    class EVIDENCE evidence;
+    style INGEST fill:#FFFFFF,stroke:#CBD5E1,color:#475569
+    style TOOLS fill:#FFFFFF,stroke:#CBD5E1,color:#475569
+    style ACCESS fill:#FFFFFF,stroke:#CBD5E1,color:#475569
+```
+
+**Blue highlight: Ghazal's Analytics work (Person 3).** It turns the full filtered
+log corpus into recurring-pattern counts, historical trends, and transparent
+priority scores for Team Leads and Managers through `top_patterns`,
+`pattern_trend`, and `priority_ranking`. See [Analytics documentation](ANALYTICS.md).
+
+- **Prepare once:** parse raw files, extract templates, and load Parquet files
+  plus the fictional component-to-team ownership mapping into SereneDB.
+- **Explore directly:** the Streamlit dashboard calls read-only tools and chart
+  queries without requiring a model API key.
+- **Explain with AI:** the OpenAI agent selects tools and uses their results;
+  it does not generate arbitrary SQL. The local MCP server offers a separate
+  interface for an MCP host using its own model.
+- **Inspect the evidence:** executed SQL, scope, counts, score factors and
+  completeness metadata remain available for checking.
 
 ## Jury quick-start (Windows / PowerShell)
 
@@ -159,36 +236,35 @@ The agent chooses these tools from their descriptions; it does not generate
 arbitrary SQL. `search_distribution` and `period_comparison` reuse the same
 query conventions for direct UI charts.
 
-## Agent-Entwicklung mit OpenAI (Kardo, Person 4)
+## OpenAI agent development (Kardo, Person 4)
 
-Das Agent-Grundgeruest verwendet das offizielle OpenAI-Python-SDK und die Responses API.
-Die Schnittstelle zu Omar bleibt `antworte(rolle, team, frage, verlauf)` mit
-`{"text": str, "belege": list}`; zusaetzlich liefert `meta` Status und Verbrauch.
-Die drei Rollen und alle sechs DB-Werkzeuge von Person 2/3 sind angeschlossen.
-Fuer echte Analysen muss die lokale SereneDB laufen und mit beiden Datensaetzen geladen sein.
-Start, Tests und Schnittstellen: [agent/README.md](agent/README.md).
+The agent uses the official OpenAI Python SDK and the Responses API.
+The interface used by Omar's UI remains `antworte(rolle, team, frage, verlauf)`,
+returning `{"text": str, "belege": list}`; `meta` also reports status and usage.
+All three roles and all six database tools from Persons 2 and 3 are connected.
+Real investigations require a running local SereneDB loaded with both datasets.
+For startup, tests and interfaces, see [agent/README.md](agent/README.md).
 
-Fuer die Agent-Entwicklung unter Windows mit vorhandenem Python 3.13:
+For agent-only development on Windows with Python 3.13 already installed:
 
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-agent.txt
-# Nur wenn .env noch nicht existiert:
+# Only create .env if it does not already exist:
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-In `.env` den eigenen `OPENAI_API_KEY` lokal eintragen. Fuer die ersten Tests ist
-`OPENAI_MODEL=gpt-6.1-sol` eingestellt. Schluessel nie ins Repository
-oder in Chatnachrichten kopieren. Die Installation allein macht keine API-Aufrufe.
-Diese kleine Installation umfasst nur Agent/DB-Pakete. Fuer Datenimport und UI
-gelten weiterhin die vollstaendigen Abhaengigkeiten unten; besonders den
-Drain3-Hinweis fuer Python 3.13 in `requirements.txt` beachten.
+Set your own `OPENAI_API_KEY` in the local `.env` file. Initial tests use
+`OPENAI_MODEL=gpt-6.1-sol`. Never copy keys into the repository or chat messages.
+Installation alone makes no API calls. This smaller installation includes only
+agent/database packages. Data ingestion and the UI require the full dependencies
+from the quick-start; note the Python 3.13 Drain3 instructions in `requirements.txt`.
 
 ## Setup
 
 Use the jury quick-start above for the complete installation and load workflow.
 
-Docs-MCP für Coding-Agenten: `claude mcp add --transport http serenedb-docs https://api.serenedb.com/mcp`
+SereneDB documentation MCP for coding assistants: `claude mcp add --transport http serenedb-docs https://api.serenedb.com/mcp`
 
 ## Log Observatory UI (Person 5)
 
@@ -347,24 +423,25 @@ Set `ANALYTICS_TEST_DB=1` to include real SereneDB checks, then run
 `python -m tests.check_ui_real` for all three roles against the loaded corpus.
 This command makes no model calls unless `--live` is explicitly supplied.
 
-## Datenschema
+## Data schema
 
-| Tabelle | Inhalt |
+| Table | Columns |
 |---|---|
 | `logs` | id, dataset, ts, level, level_raw, component, service, node, pid, request_id, instance_id, alert, message, template_id, source_file, parsed |
 | `templates` | template_id, dataset, template, count, first_seen, last_seen, max_level, alerts, main_component, example_log_id |
 | `ownership` | dataset, component, team |
 
-- `template_id`: Drain3-Template (Fehlertyp), Präfix `BGL-` bzw. `OS-`
-- `alert`: BGL-Label (≠ `-` = im Datensatz als Störung markiert)
-- `request_id` / `instance_id`: verknüpfen OpenStack-Zeilen desselben Requests bzw. derselben VM
-- `node`: BGL-Knoten, Kontext über Knoten + Zeitfenster
+- `template_id`: Drain3 message template, prefixed with `BGL-` or `OS-`.
+- `alert`: BGL label; values other than `-` mark labeled anomalies in the source data.
+- `request_id` / `instance_id`: link OpenStack lines belonging to the same request or VM.
+- `node`: BGL node identifier, used with a time window to retrieve context.
 
-## Ownership-Tabelle (fiktiv)
+## Fictional team ownership
 
-Zuordnung Komponente → Team in [`ingest/ownership.csv`](ingest/ownership.csv), damit Team Lead und Manager nach Team gruppieren können.
+The component-to-team mapping in [`ingest/ownership.csv`](ingest/ownership.csv)
+lets Team Lead and Manager investigations group results by the responsible team.
 
-| Team | Komponenten |
+| Team | Components |
 |---|---|
 | HPC Kernel | BGL: KERNEL |
 | HPC Application Support | BGL: APP |
@@ -376,23 +453,25 @@ Zuordnung Komponente → Team in [`ingest/ownership.csv`](ingest/ownership.csv),
 | Cloud Virtualization | OpenStack: nova.virt.libvirt.* |
 | Cloud Scheduling | OpenStack: nova.scheduler.* |
 
-## Struktur
+## Project structure
 
 ```
 ingest/   prepare.py, load.sql, run_sql.py, ownership.csv
-tools/    SQL-Tools für den Agenten (search_logs, get_context, top_patterns, pattern_trend, priority_ranking)
-agent/    Rollen-Prompts und Tool-Calling-Schleife
-app.py    Streamlit-UI
-data/     Rohdaten (nicht im Repo)
-out/      Ausgabe von prepare.py (nicht im Repo)
+tools/    Search, context, analytics and visualization queries
+agent/    Role prompts and the OpenAI tool-calling loop
+mcp_server/  Local stdio MCP server exposing shared tools and evidence
+app.py    Streamlit user interface
+ui.py     Charts and evidence presentation
+data/     Raw datasets (not committed)
+out/      Prepared files and local validation reports (not committed)
 ```
 
 ## Team
 
-| # | Bereich | Person |
+| # | Area | Person |
 |---|---|---|
-| 1 | Daten & Laden | Eren |
-| 2 | Suche (Engineer) | Kirdar|
+| 1 | Data preparation & loading | Eren |
+| 2 | Search (Engineer) | Kirdar |
 | 3 | Analytics (Team Lead & Manager) | Ghazal |
 | 4 | Agent | Kardo |
 | 5 | UI, Demo & Pitch | Omar |
