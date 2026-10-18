@@ -2,6 +2,10 @@
 
 ## Euer nächster Schritt
 
+Für die genaue Bedienung der Website zuerst den
+**[Website-Demo-Klickplan](Website-Demo-Klickplan.md)** öffnen. Er ordnet die
+einzelnen Klicks und sichtbaren Belege den passenden englischen Sätzen zu.
+
 Öffnet **[Demo-Script-and-Recording-Guide.pdf](Demo-Script-and-Recording-Guide.pdf)**.
 Seite 1 erklärt die Vorbereitung, Seite 2 enthält die drei kopierfertigen Fragen.
 Auf den Seiten 3-6 steht der **englische Sprechtext** mit Zeitmarken und deutschen
