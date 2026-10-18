@@ -183,7 +183,8 @@ if not s.scope:
     with st.container(border=True):
         st.subheader('Connect your evidence')
         st.markdown('Start the SereneDB container, prepare and load the challenge data, then select **Reconnect / refresh data**. See the repository README for the complete setup.')
-        st.code('docker compose up -d\npython ingest/prepare.py data/BGL/BGL.log "data/OpenStack/openstack_*.log"\npython ingest/run_sql.py ingest/load.sql', language='powershell')
+        st.warning('Loading recreates the challenge tables. Use this only for initial setup; the app login has read-only access.')
+        st.code('docker compose up -d\npython ingest/prepare.py data/BGL/BGL.log "data/OpenStack/openstack_*.log"\ndocker exec serenedb psql -h 127.0.0.1 -p 7890 -U postgres -v ON_ERROR_STOP=1 -f /data/ingest/load.sql\npython ingest/configure_local.py', language='powershell')
     with st.container(horizontal=True):
         for name, icon, copy in [('01 / Engineer', 'troubleshoot', 'Search → event timeline → next check'),
                                  ('02 / Team Lead', 'monitoring', 'Recurring patterns → trends → ownership'),
@@ -216,7 +217,7 @@ else:
 
     if role == 'Engineer':
         with st.form('search_form'):
-            text = st.text_input('Search the logs', value='data TLB error interrupt' if scope['dataset'] == 'BGL' else 'qemu-img', key='search_text')
+            text = st.text_input('Search the logs', value='data TLB error interrupt' if scope['dataset'] == 'BGL' else 'qemu-img', key=f"search_text_{scope['dataset']}")
             left, right = st.columns(2)
             with left:
                 mode = st.radio('Match mode', ['phrase', 'all', 'any'], horizontal=True)
@@ -294,7 +295,8 @@ else:
                         ui.chart(ui.durations(duration_result['daten'], duration_result.get('gesuchte_vm', {}).get('instance_id')), 'Spawn observations ranked by duration with corpus median', 'duration_chart')
                         st.dataframe(ui.table(duration_result['daten']), hide_index=True, alt='Exact spawn durations and corpus statistics')
                         vm_choice = st.selectbox('Inspect a spawn observation', [r['log_id'] for r in duration_result['daten']], index=None)
-                        if vm_choice is not None and st.button('Open VM event lens'):
+                        if vm_choice is not None and st.button('Open VM event lens',
+                                on_click=lambda: s.update({f'log_picker_{s.generation}': None})):
                             inspect_context(vm_choice)
                     else:
                         st.info('No recorded spawn durations found.')

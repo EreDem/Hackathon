@@ -1,4 +1,5 @@
 import unittest
+from importlib import import_module
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
@@ -49,9 +50,17 @@ class ChartTests(unittest.TestCase):
 
 class AppTests(unittest.TestCase):
     def setUp(self):
-        absent_agent = patch.dict('sys.modules', {'agent.agent': None})
-        absent_agent.start()
-        self.addCleanup(absent_agent.stop)
+        self.agent = None
+        def load_module(name, package=None):
+            if name == 'agent.agent':
+                if self.agent is None:
+                    raise ModuleNotFoundError(name=name)
+                return self.agent
+            return import_module(name, package)
+        # Mock only the agent import; restoring all sys.modules breaks Plotly's lazy classes.
+        agent_import = patch('importlib.import_module', side_effect=load_module)
+        agent_import.start()
+        self.addCleanup(agent_import.stop)
         responses = {'tools.db.query': f.CATALOG, 'tools.engineer.search_logs': f.SEARCH,
                      'tools.engineer.get_context': f.CONTEXT, 'tools.engineer.vm_dauer': f.DURATIONS,
                      'tools.analytics.top_patterns': f.PATTERNS, 'tools.analytics.pattern_trend': f.TREND,
@@ -163,12 +172,41 @@ class AppTests(unittest.TestCase):
         self.assertFalse(self.app.exception)
         self.mocks['tools.engineer.vm_dauer'].assert_called_once()
 
+    def test_vm_lens_replaces_search_selection_and_survives_rerender(self):
+        self.selectbox('Dataset').select('OpenStack').run()
+        self.button('Search evidence').click().run()
+        self.selectbox('Inspect a log (keyboard alternative to row selection)').select(2).run()
+        self.button('Compare spawn durations').click().run()
+        self.selectbox('Inspect a spawn observation').select(10).run()
+        self.button('Open VM event lens').click().run()
+        self.assertFalse(self.app.exception)
+        self.assertEqual(self.app.session_state['context_signature'], ('10', 600))
+        calls = self.mocks['tools.engineer.get_context'].call_count
+        self.app.run()
+        self.assertFalse(self.app.exception)
+        self.assertEqual(self.app.session_state['context_signature'], ('10', 600))
+        self.assertEqual(self.mocks['tools.engineer.get_context'].call_count, calls)
+
+    def test_dataset_switch_uses_relevant_search_default(self):
+        self.assertEqual(self.app.text_input(key='search_text_BGL').value, 'data TLB error interrupt')
+        self.selectbox('Dataset').select('OpenStack').run()
+        self.assertEqual(self.app.text_input(key='search_text_OpenStack').value, 'qemu-img')
+        self.button('Search evidence').click().run()
+        self.assertEqual(self.mocks['tools.engineer.search_logs'].call_args.kwargs['query'], 'qemu-img')
+        self.selectbox('Dataset').select('BGL').run()
+        self.assertEqual(self.app.text_input(key='search_text_BGL').value, 'data TLB error interrupt')
+
     def test_db_failure_remains_a_usable_page(self):
         self.mocks['tools.db.query'].side_effect = ConnectionError('fixture offline')
         self.button('Reconnect / refresh data').click().run()
         self.assertFalse(self.app.exception)
         self.assertIsNone(self.app.session_state['scope'])
         self.assertTrue(self.app.chat_input[0].disabled)
+
+        setup = '\n'.join(code.value for code in self.app.code)
+        self.assertIn('ON_ERROR_STOP=1 -f /data/ingest/load.sql', setup)
+        self.assertIn('python ingest/configure_local.py', setup)
+        self.assertNotIn('python ingest/run_sql.py', setup)
 
     def test_failed_refresh_does_not_keep_old_results(self):
         self.button('Search evidence').click().run()
@@ -182,7 +220,7 @@ class AppTests(unittest.TestCase):
         agent = ModuleType('agent.agent')
         agent.antworte = Mock(return_value={'text': 'Observed facts. Possible cause. Next check.',
                                            'belege': [deepcopy(f.SEARCH)]})
-        with patch.dict('sys.modules', {'agent.agent': agent}):
+        with patch.object(self, 'agent', agent):
             self.app.run()
             self.assertFalse(self.app.chat_input[0].disabled)
             self.button('Ask the prepared question').click().run()
@@ -198,7 +236,7 @@ class AppTests(unittest.TestCase):
         from unittest.mock import Mock
         agent = ModuleType('agent.agent')
         agent.antworte = Mock(side_effect=ConnectionError('fixture failed'))
-        with patch.dict('sys.modules', {'agent.agent': agent}):
+        with patch.object(self, 'agent', agent):
             self.app.run()
             self.button('Ask the prepared question').click().run()
         self.assertFalse(self.app.exception)
@@ -210,7 +248,7 @@ class AppTests(unittest.TestCase):
         agent = ModuleType('agent.agent')
         agent.antworte = Mock(return_value={'text': 'Budgetfehler', 'belege': [deepcopy(f.SEARCH)],
                                            'meta': {'status': 'budgetlimit'}})
-        with patch.dict('sys.modules', {'agent.agent': agent}):
+        with patch.object(self, 'agent', agent):
             self.app.run()
             self.button('Ask the prepared question').click().run()
         self.assertFalse(self.app.exception)
@@ -223,7 +261,7 @@ class AppTests(unittest.TestCase):
         agent = ModuleType('agent.agent')
         agent.antworte = Mock()
         agent.configuration_status = Mock(return_value={'configured': False, 'key_configured': False})
-        with patch.dict('sys.modules', {'agent.agent': agent}):
+        with patch.object(self, 'agent', agent):
             self.app.run()
         self.assertTrue(self.app.chat_input[0].disabled)
         agent.antworte.assert_not_called()
